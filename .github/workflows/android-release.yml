@@ -17,9 +17,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      # 手動觸發時標籤可能還不存在，直接用目前的 ref 建置，
+      # 標籤交給後面的 gh release create 一併建立。
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: 安裝 JDK 17
         uses: actions/setup-java@v4
@@ -102,8 +102,11 @@ jobs:
           )
           gh release delete "$TAG" --yes || true
           gh release create "$TAG" "fog-of-world-$VERSION.apk" \
+            --target "$GITHUB_SHA" \
             --title "世界迷霧 $VERSION" \
             --notes "$NOTES"
+          gh release view "$TAG" --json tagName,assets \
+            --jq '"已發佈 \(.tagName)：\(.assets[].name) (\(.assets[].size) bytes)"'
 
       - uses: actions/upload-artifact@v4
         with:

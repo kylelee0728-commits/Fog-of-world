@@ -1,0 +1,41 @@
+name: Release Cleanup
+
+# 只能手動觸發：刪除指定標籤的 Release（可一併刪掉標籤本身）
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要刪除的 Release 標籤（例如 v26.8）'
+        required: true
+      delete_tag:
+        description: '是否連標籤一起刪除'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 刪除 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag }}
+          DELETE_TAG: ${{ github.event.inputs.delete_tag }}
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "找不到 Release $TAG，不需要處理"
+            exit 0
+          fi
+          if [ "$DELETE_TAG" = "true" ]; then
+            gh release delete "$TAG" --yes --cleanup-tag
+          else
+            gh release delete "$TAG" --yes
+          fi
+          echo "已刪除 $TAG"
+          echo "剩下的 Release："
+          gh release list || echo "（沒有任何 Release）"

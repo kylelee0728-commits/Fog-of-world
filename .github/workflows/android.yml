@@ -56,16 +56,5 @@ jobs:
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      # 手機上從 Actions 下載的是 zip，很難直接安裝；
-      # 因此在 main 上另外發佈一個固定的 Release，APK 可以直接點下去安裝。
-      - name: 發佈可直接安裝的 APK
-        if: github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk fog-of-world.apk
-          gh release delete android-latest --yes --cleanup-tag || true
-          gh release create android-latest fog-of-world.apk \
-            --title "世界迷霧 Android（最新建置）" \
-            --notes "由 commit ${GITHUB_SHA:0:7} 自動建置。手機直接點下面的 fog-of-world.apk 安裝即可（需允許「安裝未知來源的應用程式」）。" \
-            --prerelease
+      # 目前不自動發佈 Release，APK 只留在上面的 Actions 成品裡。
+      # 要恢復自動發佈，用 android-release.yml 手動觸發即可。

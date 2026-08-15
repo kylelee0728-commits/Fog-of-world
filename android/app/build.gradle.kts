@@ -5,7 +5,8 @@ plugins {
 }
 
 // 有提供正式金鑰就用正式金鑰簽章（CI 從 secret 取得），沒有就退回 debug 簽章。
-val releaseKeystore: String? = System.getenv("FOW_KEYSTORE_FILE")
+// CI 沒設定 secret 時環境變數會是空字串而不是未設定，所以空白也要當成「沒有金鑰」
+val releaseKeystore: String? = System.getenv("FOW_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
 
 android {
     namespace = "com.fogofworld"

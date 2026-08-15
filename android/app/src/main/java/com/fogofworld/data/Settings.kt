@@ -13,6 +13,8 @@ object Settings {
     private const val KEY_FOLLOW = "follow"
     private const val KEY_INTERVAL = "interval_sec"
     private const val KEY_SEEN_INTRO = "seen_intro"
+    private const val KEY_AUTO_UPDATE = "auto_update"
+    private const val KEY_LAST_CHECK = "last_update_check"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -35,4 +37,11 @@ object Settings {
 
     fun seenIntro(context: Context): Boolean = prefs(context).getBoolean(KEY_SEEN_INTRO, false)
     fun setSeenIntro(context: Context, v: Boolean) = prefs(context).edit { putBoolean(KEY_SEEN_INTRO, v) }
+
+    /** 開啟 App 時自動檢查有沒有新版本 */
+    fun autoUpdate(context: Context): Boolean = prefs(context).getBoolean(KEY_AUTO_UPDATE, true)
+    fun setAutoUpdate(context: Context, v: Boolean) = prefs(context).edit { putBoolean(KEY_AUTO_UPDATE, v) }
+
+    fun lastUpdateCheck(context: Context): Long = prefs(context).getLong(KEY_LAST_CHECK, 0L)
+    fun setLastUpdateCheck(context: Context, v: Long) = prefs(context).edit { putLong(KEY_LAST_CHECK, v) }
 }

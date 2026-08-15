@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -254,6 +255,85 @@ object FogStore {
     fun visitedLandmarkIds(): Map<String, Long> = visitedLandmarks
 
     fun unlockedAchievementIds(): Map<String, Long> = unlockedAchievements
+
+    /** 每日里程（YYYY-MM-DD → 公尺），統計頁用 */
+    fun dailyDistances(): Map<String, Double> = HashMap(days)
+
+    // ── 備份：格式與網頁版相同，兩邊可以互相匯入 ──────────
+
+    fun exportJson(): String {
+        val o = metaJson()
+        o.put("v", 1)
+        o.put("createdAt", System.currentTimeMillis())
+        o.put("updatedAt", System.currentTimeMillis())
+        o.put("cells", flatten(cells))
+        o.put("blocks", flatten(blocks))
+        lastFix?.let {
+            o.put("lastPos", JSONObject().put("lat", it.lat).put("lng", it.lng).put("ts", it.time))
+        }
+        return o.toString()
+    }
+
+    /** 匯入會整個覆蓋目前的紀錄 */
+    fun importJson(text: String): Boolean = runCatching {
+        val o = JSONObject(text)
+        val newCells = expand(o.optJSONArray("cells"))
+        // 沒有 cells 就不是這個 App 的存檔，直接拒絕而不是清空使用者資料
+        if (newCells.isEmpty() && !o.has("distanceM")) return@runCatching false
+
+        cells.clear(); cells.addAll(newCells)
+        blocks.clear(); blocks.addAll(expand(o.optJSONArray("blocks")))
+        index.clear()
+        for (k in cells) {
+            index.getOrPut(bucketOf(k)) { Bucket() }
+                .add(Grid.cellLat(k, Grid.CELL_M), Grid.cellLng(k, Grid.CELL_M))
+        }
+
+        distanceM = o.optDouble("distanceM", 0.0)
+        maxAltitude = o.optDouble("maxAltitude", 0.0)
+        nightWalk = o.optInt("nightWalk", 0)
+        dawnWalk = o.optInt("dawnWalk", 0)
+        bestSessionM = o.optDouble("bestSessionM", 0.0)
+
+        days.clear()
+        o.optJSONObject("days")?.let { d -> d.keys().forEach { days[it] = d.optDouble(it, 0.0) } }
+        visitedLandmarks.clear()
+        o.optJSONObject("landmarks")?.let { d -> d.keys().forEach { visitedLandmarks[it] = d.optLong(it) } }
+        unlockedAchievements.clear()
+        o.optJSONObject("achievements")?.let { d -> d.keys().forEach { unlockedAchievements[it] = d.optLong(it) } }
+
+        o.optJSONObject("lastPos")?.let {
+            lastFix = Fix(it.optDouble("lat"), it.optDouble("lng"), time = it.optLong("ts", System.currentTimeMillis()))
+        }
+        anchor = null
+
+        dirty = true
+        flush(force = true)
+        publish()
+        _events.tryEmit(Event.FogChanged)
+        true
+    }.getOrDefault(false)
+
+    /** 網格代號攤平成 [i, j, i, j, ...]，與網頁版的存檔一致 */
+    private fun flatten(set: Set<Long>): JSONArray {
+        val arr = JSONArray()
+        for (k in set) {
+            arr.put(Grid.keyI(k))
+            arr.put(Grid.keyJ(k))
+        }
+        return arr
+    }
+
+    private fun expand(arr: JSONArray?): List<Long> {
+        if (arr == null) return emptyList()
+        val out = ArrayList<Long>(arr.length() / 2)
+        var i = 0
+        while (i + 1 < arr.length()) {
+            out.add(Grid.key(arr.optInt(i), arr.optInt(i + 1)))
+            i += 2
+        }
+        return out
+    }
 
     private fun currentStreak(): Int {
         if (days.isEmpty()) return 0

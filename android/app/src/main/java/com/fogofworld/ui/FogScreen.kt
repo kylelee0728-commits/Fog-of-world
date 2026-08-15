@@ -5,9 +5,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fogofworld.data.FogStore
+import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Ranks
 import com.fogofworld.data.Settings
 import org.osmdroid.events.MapListener
@@ -57,16 +60,24 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 
-private enum class Sheet { NONE, ACHIEVEMENTS, PASSPORT, SETTINGS }
+private enum class Sheet { NONE, ACHIEVEMENTS, PASSPORT, SETTINGS, STATS }
 
 data class Toast(val id: Long, val icon: String, val title: String, val sub: String)
 
 @Composable
 fun FogScreen(
     walking: Boolean,
+    hasBackgroundPermission: Boolean,
+    appVersion: String,
+    updateState: UpdateState,
     onToggleWalk: () -> Unit,
     onRequestBackground: () -> Unit,
-    hasBackgroundPermission: Boolean,
+    onCheckUpdate: () -> Unit,
+    onInstallUpdate: () -> Unit,
+    onGrantInstallPermission: () -> Unit,
+    onDismissUpdate: () -> Unit,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
 ) {
     val context = LocalContext.current
     val stats by FogStore.stats.collectAsStateWithLifecycle()
@@ -81,6 +92,7 @@ fun FogScreen(
     var opacity by remember { mutableStateOf(Settings.fogOpacity(context)) }
     var accuracy by remember { mutableStateOf(Settings.accuracyLimit(context)) }
     var interval by remember { mutableStateOf(Settings.intervalSec(context)) }
+    var autoUpdate by remember { mutableStateOf(Settings.autoUpdate(context)) }
 
     // 事件：撥霧重畫、跟隨鏡頭、成就與蓋章提示
     LaunchedEffect(Unit) {
@@ -212,7 +224,10 @@ fun FogScreen(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.clickable { sheet = Sheet.STATS },
+            ) {
                 StatChip(Modifier.weight(1f), String.format("%.2f", stats.distanceM / 1000), "公里")
                 StatChip(
                     Modifier.weight(1f),
@@ -281,8 +296,10 @@ fun FogScreen(
                 DockButton(Modifier.weight(1f), "🛂", "護照") { sheet = Sheet.PASSPORT }
                 Button(
                     onClick = onToggleWalk,
-                    modifier = Modifier.weight(1.5f).height(56.dp),
+                    modifier = Modifier.weight(1.6f).height(58.dp),
                     shape = RoundedCornerShape(16.dp),
+                    // 預設內距左右各 24dp，四個中文字會被擠掉
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (walking) FogTeal else FogAccent,
                         contentColor = Color(0xFF10161F),
@@ -292,7 +309,10 @@ fun FogScreen(
                         Text(if (walking) "⏸️" else "🚶", fontSize = 17.sp)
                         Text(
                             if (walking) "暫停探索" else "開始探索",
-                            fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
                         )
                     }
                 }
@@ -324,7 +344,9 @@ fun FogScreen(
                 accuracy = accuracy,
                 interval = interval,
                 follow = follow,
+                autoUpdate = autoUpdate,
                 hasBackground = hasBackgroundPermission,
+                appVersion = appVersion,
                 onRadius = {
                     radius = it
                     Settings.setRevealRadius(context, it)
@@ -339,7 +361,11 @@ fun FogScreen(
                 onAccuracy = { accuracy = it; Settings.setAccuracyLimit(context, it) },
                 onInterval = { interval = it; Settings.setIntervalSec(context, it) },
                 onFollow = { follow = it; Settings.setFollow(context, it) },
+                onAutoUpdate = { autoUpdate = it; Settings.setAutoUpdate(context, it) },
                 onRequestBackground = onRequestBackground,
+                onCheckUpdate = { sheet = Sheet.NONE; onCheckUpdate() },
+                onExport = { sheet = Sheet.NONE; onExport() },
+                onImport = { sheet = Sheet.NONE; onImport() },
                 onReset = {
                     FogStore.reset()
                     fogView?.invalidate()
@@ -347,8 +373,24 @@ fun FogScreen(
                 onDismiss = { sheet = Sheet.NONE },
             )
 
+            Sheet.STATS -> StatsSheet(
+                stats = stats,
+                daily = FogStore.dailyDistances(),
+                landmarkTotal = Landmarks.all(context).size,
+                onDismiss = { sheet = Sheet.NONE },
+            )
+
             Sheet.NONE -> Unit
         }
+
+        // ── 更新 ────────────────────────────────────
+        UpdateDialog(
+            state = updateState,
+            currentVersion = appVersion,
+            onInstall = onInstallUpdate,
+            onGrantPermission = onGrantInstallPermission,
+            onDismiss = onDismissUpdate,
+        )
 
         // ── 開場 ────────────────────────────────────
         if (showIntro) {
@@ -381,11 +423,25 @@ private fun StatChip(modifier: Modifier, value: String, label: String) {
 
 @Composable
 private fun DockButton(modifier: Modifier, icon: String, label: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = modifier) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(icon, fontSize = 18.sp)
-            Text(label, color = FogMuted, fontSize = 10.sp)
-        }
+    // 刻意不用 TextButton：它預設左右各有 12dp 內距又有最小寬度，
+    // 五個項目擠一列時會把中文字切掉。
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp, horizontal = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(icon, fontSize = 18.sp)
+        Spacer(Modifier.height(3.dp))
+        Text(
+            label,
+            color = FogMuted,
+            fontSize = 10.sp,
+            maxLines = 1,
+            softWrap = false,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

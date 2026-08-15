@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fogofworld.data.Achievements
@@ -59,7 +60,7 @@ private fun formatDistance(m: Double): String =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Sheet(title: String, subtitle: String, onDismiss: () -> Unit, body: @Composable () -> Unit) {
+internal fun SheetScaffold(title: String, subtitle: String, onDismiss: () -> Unit, body: @Composable () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -82,7 +83,7 @@ private fun Sheet(title: String, subtitle: String, onDismiss: () -> Unit, body: 
 @Composable
 fun AchievementSheet(stats: Stats, onDismiss: () -> Unit) {
     val unlocked = FogStore.unlockedAchievementIds()
-    Sheet("🏅 成就", "${unlocked.size} / ${Achievements.COUNT} 已解鎖", onDismiss) {
+    SheetScaffold("🏅 成就", "${unlocked.size} / ${Achievements.COUNT} 已解鎖", onDismiss) {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.height(520.dp),
@@ -137,7 +138,7 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
     val here = FogStore.lastFix
     val continents = visited.keys.mapNotNull { id -> all.firstOrNull { it.id == id }?.continent }.toSet()
 
-    Sheet("🛂 世界護照", "${visited.size} / ${all.size} 個地標 · ${continents.size} 個大洲", onDismiss) {
+    SheetScaffold("🛂 世界護照", "${visited.size} / ${all.size} 個地標 · ${continents.size} 個大洲", onDismiss) {
         // 最近的未造訪地標：距離與方位都先算好，避免在 lambda 裡再處理可空的定位
         val nearest: Triple<Landmark, Double, String>? = here?.let { fix ->
             all.filter { it.id !in visited.keys }
@@ -237,19 +238,25 @@ fun SettingsSheet(
     accuracy: Int,
     interval: Int,
     follow: Boolean,
+    autoUpdate: Boolean,
     hasBackground: Boolean,
+    appVersion: String,
     onRadius: (Int) -> Unit,
     onOpacity: (Int) -> Unit,
     onAccuracy: (Int) -> Unit,
     onInterval: (Int) -> Unit,
     onFollow: (Boolean) -> Unit,
+    onAutoUpdate: (Boolean) -> Unit,
     onRequestBackground: () -> Unit,
+    onCheckUpdate: () -> Unit,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
     onReset: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     var confirmReset by remember { mutableStateOf(false) }
 
-    Sheet("⚙️ 設定", "", onDismiss) {
+    SheetScaffold("⚙️ 設定", "版本 $appVersion", onDismiss) {
         Column(Modifier.height(520.dp)) {
             SliderRow("撥霧半徑", "走過的地方會清除多大範圍", "$radius m", radius.toFloat(), 20f..200f, 18) {
                 onRadius(it.roundToInt())
@@ -264,18 +271,26 @@ fun SettingsSheet(
                 onInterval(it.roundToInt())
             }
 
+            SwitchRow("畫面跟隨我", "移動時地圖自動置中", follow, onFollow)
+            SwitchRow("自動檢查更新", "開啟 App 時看看有沒有新版本", autoUpdate, onAutoUpdate)
+
             Row(
-                Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text("畫面跟隨我", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText)
-                    Text("移動時地圖自動置中", fontSize = 11.sp, color = FogMuted)
-                }
-                Switch(
-                    checked = follow, onCheckedChange = onFollow,
-                    colors = SwitchDefaults.colors(checkedThumbColor = FogAccent),
-                )
+                SmallAction("⬇️ 檢查更新", Modifier.weight(1f), onCheckUpdate)
+            }
+
+            Spacer(Modifier.height(6.dp))
+            Text("備份", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText)
+            Text(
+                "匯出的檔案與網頁版通用，可以互相匯入。重裝 App 前記得先匯出。",
+                fontSize = 11.sp, color = FogMuted,
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SmallAction("📤 匯出存檔", Modifier.weight(1f), onExport)
+                SmallAction("📥 匯入存檔", Modifier.weight(1f), onImport)
             }
 
             Surface(
@@ -334,6 +349,48 @@ fun SettingsSheet(
             dismissButton = {
                 TextButton(onClick = { confirmReset = false }) { Text("取消", color = FogMuted) }
             },
+        )
+    }
+}
+
+@Composable
+private fun SwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText)
+            Text(subtitle, fontSize = 11.sp, color = FogMuted)
+        }
+        Switch(
+            checked = checked, onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(checkedThumbColor = FogAccent),
+        )
+    }
+}
+
+/** 小按鈕：不用 Button，避免預設內距把中文字擠掉 */
+@Composable
+private fun SmallAction(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        color = Color.White.copy(alpha = 0.05f),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, FogLine),
+    ) {
+        Text(
+            label,
+            color = FogText,
+            fontSize = 13.sp,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 11.dp, horizontal = 6.dp),
         )
     }
 }

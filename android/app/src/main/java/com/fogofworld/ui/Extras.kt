@@ -97,8 +97,8 @@ fun StatsSheet(
 
             val rows = listOf(
                 "總距離" to fmtDistance(stats.distanceM),
-                "已撥霧面積" to "${fmt2(stats.areaKm2)} km²",
-                "霧格數" to "${stats.cells}",
+                "已點亮面積" to "${fmt2(stats.areaKm2)} km²",
+                "光格數" to "${stats.cells}",
                 "探索天數" to "${stats.activeDays} 天",
                 "目前連續" to "${stats.streak} 天",
                 "單日最遠" to fmtDistance(stats.bestDayM),

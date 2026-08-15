@@ -1,7 +1,7 @@
 {
-  "name": "世界迷霧 Fog of World",
-  "short_name": "世界迷霧",
-  "description": "戰後大霧籠罩世界，用雙腳走出去撥開迷霧、解鎖成就、造訪世界各地。",
+  "name": "拾光者 Lightfarer",
+  "short_name": "拾光者",
+  "description": "世界的光開始遺失，只有親自走過的地方光會回來。用腳步點亮世界。",
   "lang": "zh-Hant",
   "start_url": "./index.html",
   "scope": "./",

@@ -4,7 +4,7 @@ const A = (id, icon, name, desc, target, value) => ({ id, icon, name, desc, targ
 
 export const ACHIEVEMENTS = [
   // 起步
-  A('first_step', '🥾', '初次踏出', '記錄下你的第一個座標', 1, (s) => s.cells),
+  A('first_step', '🥾', '第一步', '在長夜裡留下第一個腳印', 1, (s) => s.cells),
 
   // 距離
   A('dist_1', '👣', '千里之行', '累積步行 1 公里', 1000, (s) => s.distanceM),
@@ -15,12 +15,12 @@ export const ACHIEVEMENTS = [
   A('dist_500', '🧭', '大陸縱走', '累積步行 500 公里', 500000, (s) => s.distanceM),
   A('dist_1000', '🌍', '環球起點', '累積步行 1000 公里', 1000000, (s) => s.distanceM),
 
-  // 撥霧面積
-  A('area_01', '🌫️', '撥雲見日', '撥開 0.1 平方公里的迷霧', 0.1, (s) => s.areaKm2),
-  A('area_1', '🗺️', '一方天地', '撥開 1 平方公里的迷霧', 1, (s) => s.areaKm2),
-  A('area_10', '🏙️', '城區解放', '撥開 10 平方公里的迷霧', 10, (s) => s.areaKm2),
-  A('area_50', '🌆', '區域霸主', '撥開 50 平方公里的迷霧', 50, (s) => s.areaKm2),
-  A('area_100', '🌐', '破霧者', '撥開 100 平方公里的迷霧', 100, (s) => s.areaKm2),
+  // 點亮面積
+  A('area_01', '✨', '初亮', '點亮 0.1 平方公里', 0.1, (s) => s.areaKm2),
+  A('area_1', '🗺️', '一方天地', '點亮 1 平方公里', 1, (s) => s.areaKm2),
+  A('area_10', '🏙️', '街區重光', '點亮 10 平方公里', 10, (s) => s.areaKm2),
+  A('area_50', '🌆', '半城燈火', '點亮 50 平方公里', 50, (s) => s.areaKm2),
+  A('area_100', '🌐', '破夜者', '點亮 100 平方公里', 100, (s) => s.areaKm2),
 
   // 習慣
   A('streak_3', '📅', '三日不輟', '連續 3 天出門探索', 3, (s) => s.streak),
@@ -47,9 +47,9 @@ export const ACHIEVEMENTS = [
   A('alt_1000', '⛰️', '高地偵察', '在海拔 1000 公尺以上探索', 1000, (s) => s.maxAltitude),
   A('alt_2500', '🏔️', '雲上行者', '在海拔 2500 公尺以上探索', 2500, (s) => s.maxAltitude),
 
-  // 迷霧
-  A('cells_1000', '🌁', '迷霧獵人', '清除 1000 個霧格', 1000, (s) => s.cells),
-  A('cells_10000', '👑', '霧之領主', '清除 10000 個霧格', 10000, (s) => s.cells),
+  // 光格
+  A('cells_1000', '🌁', '拾光獵人', '點亮 1000 個光格', 1000, (s) => s.cells),
+  A('cells_10000', '👑', '長夜終結者', '點亮 10000 個光格', 10000, (s) => s.cells),
 ];
 
 export const ACHIEVEMENT_COUNT = ACHIEVEMENTS.length;
@@ -64,16 +64,16 @@ export function evaluate(stats, unlocked) {
   return fresh;
 }
 
-/** 軍階：依撥霧面積晉升 */
+/** 稱號：依點亮面積晉升 */
 export const RANKS = [
-  { icon: '🌫️', name: '迷霧新兵', at: 0 },
-  { icon: '🔦', name: '偵察兵', at: 0.25 },
-  { icon: '🥾', name: '拓荒者', at: 1 },
-  { icon: '🧭', name: '遊俠', at: 5 },
-  { icon: '🗺️', name: '製圖師', at: 15 },
-  { icon: '⚔️', name: '破霧者', at: 40 },
-  { icon: '🏆', name: '世界行者', at: 100 },
-  { icon: '👑', name: '霧之領主', at: 250 },
+  { icon: '🕯️', name: '提燈人', at: 0 },
+  { icon: '🔦', name: '尋光者', at: 0.25 },
+  { icon: '🪔', name: '拾光者', at: 1 },
+  { icon: '🧭', name: '巡路人', at: 5 },
+  { icon: '🗺️', name: '繪光師', at: 15 },
+  { icon: '⚡', name: '破夜者', at: 40 },
+  { icon: '🌅', name: '曦光使者', at: 100 },
+  { icon: '👑', name: '白晝之主', at: 250 },
 ];
 
 export function rankFor(areaKm2) {

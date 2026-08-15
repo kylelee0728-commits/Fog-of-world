@@ -233,7 +233,7 @@ fun FogScreen(
                     Modifier.weight(1f),
                     if (stats.areaKm2 < 10) String.format("%.2f", stats.areaKm2)
                     else String.format("%.1f", stats.areaKm2),
-                    "km² 已撥霧",
+                    "km² 已點亮",
                 )
                 StatChip(Modifier.weight(1f), "${stats.landmarks}", "地標")
             }
@@ -479,18 +479,20 @@ private fun IntroOverlay(onStart: () -> Unit) {
             Modifier.padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("🌫️", fontSize = 58.sp)
+            Text("🕯️", fontSize = 58.sp)
             Spacer(Modifier.height(8.dp))
-            Text("世界迷霧", color = FogText, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+            Text("拾光者", color = FogText, fontSize = 30.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(18.dp))
             Text(
-                "戰爭結束了，留下的是一場不散的大霧。\n" +
-                    "地圖失效、道路被遺忘，世界只剩下你腳下這一小塊光。",
+                "那一年，光開始遺失。\n" +
+                    "不是入夜——夜會過去。是光忘了怎麼留在地上。\n" +
+                    "城市一盞一盞暗去，道路失去輪廓，地圖變回空白的紙。\n\n" +
+                    "後來人們發現：只有親自走過的地方，光會回來。",
                 color = FogMuted, fontSize = 13.sp, textAlign = TextAlign.Center, lineHeight = 24.sp,
             )
             Spacer(Modifier.height(14.dp))
             Text(
-                "唯一能撥開迷霧的方法，是親自走過去。",
+                "光不會自己亮起來，要用腳步把它撿回來。",
                 color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(28.dp))
@@ -501,7 +503,7 @@ private fun IntroOverlay(onStart: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(
                     containerColor = FogAccent, contentColor = Color(0xFF10161F)
                 ),
-            ) { Text("開始撥霧", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
+            ) { Text("開始拾光", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
             Spacer(Modifier.height(14.dp))
             Text(
                 "需要定位權限。資料只留在這台手機上，不會上傳。",

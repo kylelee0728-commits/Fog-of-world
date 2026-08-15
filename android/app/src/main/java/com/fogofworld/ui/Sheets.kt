@@ -258,10 +258,10 @@ fun SettingsSheet(
 
     SheetScaffold("⚙️ 設定", "版本 $appVersion", onDismiss) {
         Column(Modifier.height(520.dp)) {
-            SliderRow("撥霧半徑", "走過的地方會清除多大範圍", "$radius m", radius.toFloat(), 20f..200f, 18) {
+            SliderRow("點亮半徑", "走過的地方會照亮多大範圍", "$radius m", radius.toFloat(), 20f..200f, 18) {
                 onRadius(it.roundToInt())
             }
-            SliderRow("迷霧濃度", "未探索區域的暗度", "$opacity%", opacity.toFloat(), 30f..100f, 14) {
+            SliderRow("夜色濃度", "還沒走過的地方有多暗", "$opacity%", opacity.toFloat(), 30f..100f, 14) {
                 onOpacity(it.roundToInt())
             }
             SliderRow("GPS 精度門檻", "誤差大於此值的定位會被忽略", "$accuracy m", accuracy.toFloat(), 10f..200f, 19) {
@@ -339,7 +339,7 @@ fun SettingsSheet(
             containerColor = FogPanel,
             title = { Text("清除所有紀錄？", color = FogText) },
             text = {
-                Text("走過的霧會全部長回來，成就與護照也會歸零，這個動作無法復原。", color = FogMuted)
+                Text("點亮過的地方會重新暗下來，成就與護照也會歸零，這個動作無法復原。", color = FogMuted)
             },
             confirmButton = {
                 TextButton(onClick = { confirmReset = false; onReset() }) {

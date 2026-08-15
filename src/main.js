@@ -1,4 +1,4 @@
-// 世界迷霧 —— 主程式
+// 拾光者 —— 主程式
 
 import { GameState } from './state.js';
 import { fogLayer } from './fogLayer.js';
@@ -175,7 +175,7 @@ $('btnLocate').onclick = () => {
     (p) => {
       lastPos = { lat: p.coords.latitude, lng: p.coords.longitude };
       map.flyTo([lastPos.lat, lastPos.lng], 16);
-      setGps('idle', '已定位，按「開始探索」撥霧');
+      setGps('idle', '已定位，按「開始探索」點亮');
     },
     () => setGps('error', '拿不到定位，請確認已允許權限'),
     { enableHighAccuracy: true, timeout: 15000 }
@@ -191,7 +191,7 @@ function flyToLandmark(lm) {
   if (!lm) return;
   closeSheets();
   map.flyTo([lm.lat, lm.lng], 13, { duration: 1.6 });
-  toast({ icon: lm.icon, title: lm.zh, sub: state.data.landmarks[lm.id] ? '已蓋章 · 光看不算數，走過才是你的' : '還沒去過 —— 這裡的霧還沒散' });
+  toast({ icon: lm.icon, title: lm.zh, sub: state.data.landmarks[lm.id] ? '已蓋章 · 光看不算數，走過才是你的' : '還沒去過 —— 這裡還是暗的' });
 }
 
 // ── 設定 ─────────────────────────────────────────────
@@ -273,7 +273,7 @@ $('btnReset').onclick = () => {
   state.reset();
   fog.rebuildIndex();
   fog.schedule();
-  toast({ icon: '🌫️', title: '大霧再度籠罩世界', sub: '一切從頭開始' });
+  toast({ icon: '🕯️', title: '長夜再度降臨', sub: '一切從頭開始' });
 };
 
 // ── 模擬操作 ─────────────────────────────────────────
@@ -343,9 +343,9 @@ function beginGame(sim) {
   const s = state.stats();
   if (s.cells === 0) {
     toast({
-      icon: '🌫️',
+      icon: '🕯️',
       title: sim ? '模擬模式已啟動' : '出發吧',
-      sub: sim ? '點地圖任一處，或用方向鍵開始移動' : '走動時霧會沿著你的路線散開',
+      sub: sim ? '點地圖任一處，或用方向鍵開始移動' : '走動時光會沿著你的路線亮起來',
       ms: 6000,
     });
   }

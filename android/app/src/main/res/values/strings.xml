@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">世界迷霧</string>
-    <string name="channel_walking">探索中</string>
-    <string name="channel_walking_desc">走路撥霧時顯示的常駐通知</string>
-    <string name="notif_title">正在撥霧 · %1$s</string>
-    <string name="notif_text">已走 %1$s 公里 · 撥開 %2$s km²</string>
+    <string name="app_name">拾光者</string>
+    <string name="channel_walking">拾光中</string>
+    <string name="channel_walking_desc">走路點亮世界時顯示的常駐通知</string>
+    <string name="notif_title">正在拾光 · %1$s</string>
+    <string name="notif_text">已走 %1$s 公里 · 點亮 %2$s km²</string>
     <string name="notif_stop">暫停</string>
 </resources>

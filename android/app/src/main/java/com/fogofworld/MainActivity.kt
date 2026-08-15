@@ -207,7 +207,7 @@ class MainActivity : ComponentActivity() {
                 }.getOrDefault(false)
             }
             updateState = UpdateState.Message(
-                if (ok) "存檔已匯入，霧已經照新的紀錄重畫。" else "匯入失敗：檔案格式看起來不是世界迷霧的存檔。"
+                if (ok) "存檔已匯入，地圖已經照新的紀錄重畫。" else "匯入失敗：檔案格式看起來不是拾光者的存檔。"
             )
         }
     }

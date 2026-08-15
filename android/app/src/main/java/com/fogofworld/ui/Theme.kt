@@ -1,6 +1,5 @@
 package com.fogofworld.ui
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -29,10 +28,8 @@ private val Scheme = darkColorScheme(
     error = FogDanger,
 )
 
-/** 這個 App 只有一種樣子：戰後的暗色迷霧 */
+/** 這個 App 只有一種樣子：戰後的暗色迷霧，不跟隨系統的淺色模式 */
 @Composable
 fun FogTheme(content: @Composable () -> Unit) {
-    @Suppress("UNUSED_EXPRESSION")
-    isSystemInDarkTheme()
     MaterialTheme(colorScheme = Scheme, content = content)
 }

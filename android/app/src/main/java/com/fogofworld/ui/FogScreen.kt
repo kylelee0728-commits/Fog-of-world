@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,7 +48,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fogofworld.data.FogStore
-import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Ranks
 import com.fogofworld.data.Settings
 import org.osmdroid.events.MapListener
@@ -456,9 +454,3 @@ private fun IntroOverlay(onStart: () -> Unit) {
         }
     }
 }
-
-/** 讓 Sheet 共用的視窗留白 */
-val sheetInsets: WindowInsets
-    @Composable get() = WindowInsets(0, 0, 0, 0)
-
-internal fun landmarkCount(context: android.content.Context): Int = Landmarks.all(context).size

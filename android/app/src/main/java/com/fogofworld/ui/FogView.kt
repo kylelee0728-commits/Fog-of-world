@@ -237,7 +237,8 @@ class FogView(context: Context, private val map: MapView) : View(context) {
         val cached = brush
         if (cached != null && brushRadius == r) return cached
         val size = r * 2
-        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ALPHA_8)
+        // 用 ARGB_8888：ALPHA_8 在硬體加速下的 drawBitmap 行為不一致
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         val p = Paint(Paint.ANTI_ALIAS_FLAG)
         p.shader = RadialGradient(

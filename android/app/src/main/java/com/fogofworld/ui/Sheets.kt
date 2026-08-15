@@ -138,10 +138,17 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
     val continents = visited.keys.mapNotNull { id -> all.firstOrNull { it.id == id }?.continent }.toSet()
 
     Sheet("🛂 世界護照", "${visited.size} / ${all.size} 個地標 · ${continents.size} 個大洲", onDismiss) {
-        val nearest = here?.let { fix ->
+        // 最近的未造訪地標：距離與方位都先算好，避免在 lambda 裡再處理可空的定位
+        val nearest: Triple<Landmark, Double, String>? = here?.let { fix ->
             all.filter { it.id !in visited.keys }
                 .minByOrNull { Grid.distanceM(fix.lat, fix.lng, it.lat, it.lng) }
-                ?.let { it to Grid.distanceM(fix.lat, fix.lng, it.lat, it.lng) }
+                ?.let { lm ->
+                    Triple(
+                        lm,
+                        Grid.distanceM(fix.lat, fix.lng, lm.lat, lm.lng),
+                        Grid.compass(Grid.bearing(fix.lat, fix.lng, lm.lat, lm.lng)),
+                    )
+                }
         }
 
         LazyColumn(
@@ -150,8 +157,7 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
         ) {
             if (nearest != null) {
                 item {
-                    val (lm, dist) = nearest
-                    val dir = Grid.compass(Grid.bearing(here.lat, here.lng, lm.lat, lm.lng))
+                    val (lm, dist, dir) = nearest
                     Surface(
                         color = FogTeal.copy(alpha = 0.08f),
                         shape = RoundedCornerShape(14.dp),

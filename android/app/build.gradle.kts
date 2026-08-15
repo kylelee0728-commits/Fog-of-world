@@ -4,16 +4,30 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// 有提供正式金鑰就用正式金鑰簽章（CI 從 secret 取得），沒有就退回 debug 簽章。
+val releaseKeystore: String? = System.getenv("FOW_KEYSTORE_FILE")
+
 android {
     namespace = "com.fogofworld"
     compileSdk = 35
+
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("upload") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("FOW_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("FOW_KEY_ALIAS")
+                keyPassword = System.getenv("FOW_KEY_PASSWORD")
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.fogofworld"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2608
+        versionName = "26.8"
         resourceConfigurations += listOf("zh", "en")
     }
 
@@ -24,6 +38,7 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName(if (releaseKeystore != null) "upload" else "debug")
         }
     }
 

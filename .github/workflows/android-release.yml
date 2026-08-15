@@ -1,13 +1,15 @@
 name: Android Release
 
-# 推送 v* 標籤時建置並發佈正式的 Release（例如 v26.8）
+# 兩種發佈方式：
+#   1. 手動觸發並填版本號（例如 26.8.1）—— 會自動更新 build.gradle.kts 再發佈
+#   2. 推送 v* 標籤 —— 版本號必須與 build.gradle.kts 一致，否則直接失敗
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
     inputs:
-      tag:
-        description: '要發佈的版本標籤（例如 v26.8）'
+      version:
+        description: '版本號：年份尾數.月份[.小版本]，例如 26.8、26.8.1、26.9'
         required: true
 
 permissions:
@@ -17,8 +19,6 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      # 手動觸發時標籤可能還不存在，直接用目前的 ref 建置，
-      # 標籤交給後面的 gh release create 一併建立。
       - uses: actions/checkout@v4
 
       - name: 安裝 JDK 17
@@ -30,12 +30,50 @@ jobs:
       - name: 設定 Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: 取出版本號
+      - name: 決定並檢查版本號
         id: version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          NAME=$(grep -oP 'versionName = "\K[^"]+' android/app/build.gradle.kts)
-          echo "name=$NAME" >> "$GITHUB_OUTPUT"
-          echo "版本：$NAME"
+          set -euo pipefail
+          GRADLE_FILE=android/app/build.gradle.kts
+          FILE_VERSION=$(grep -oP '^val appVersionName = "\K[^"]+' "$GRADLE_FILE")
+
+          if [ -n "${INPUT_VERSION:-}" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+
+          # 年份尾數.月份[.小版本]，月份 1-12，小版本 0-99
+          if ! echo "$VERSION" | grep -qE '^[0-9]{2}\.(1[0-2]|[1-9])(\.[0-9]{1,2})?$'; then
+            echo "::error::版本號格式錯誤：$VERSION（應為 26.8、26.8.1、26.9 這種形式）"
+            exit 1
+          fi
+
+          echo "版本號：$VERSION（檔案目前是 $FILE_VERSION）"
+          echo "name=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "file=$FILE_VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ "$VERSION" != "$FILE_VERSION" ] && [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            echo "::error::標籤 $GITHUB_REF_NAME 與 build.gradle.kts 的 $FILE_VERSION 不一致"
+            exit 1
+          fi
+
+      - name: 更新版本號並提交
+        if: github.event_name == 'workflow_dispatch' && steps.version.outputs.name != steps.version.outputs.file
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          set -euo pipefail
+          GRADLE_FILE=android/app/build.gradle.kts
+          sed -i -E "s|^val appVersionName = \".*\"$|val appVersionName = \"$VERSION\"|" "$GRADLE_FILE"
+          grep -q "^val appVersionName = \"$VERSION\"$" "$GRADLE_FILE"
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add "$GRADLE_FILE"
+          git commit -m "版本號更新為 $VERSION"
+          git push origin HEAD:${{ github.ref_name }}
 
       - name: 準備簽章金鑰（有設定 secret 才會用）
         id: signing
@@ -61,21 +99,25 @@ jobs:
         run: ./gradlew assembleRelease --stacktrace
 
       - name: 確認產物是可安裝的 APK
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
         run: |
+          set -euo pipefail
           APK=android/app/build/outputs/apk/release/app-release.apk
           test -f "$APK" || { echo "找不到 APK"; exit 1; }
           unzip -l "$APK" | grep -q AndroidManifest.xml || { echo "APK 內容不完整"; exit 1; }
           grep -qa "APK Sig Block 42" "$APK" || { echo "APK 沒有簽章，無法安裝"; exit 1; }
-          cp "$APK" "fog-of-world-${{ steps.version.outputs.name }}.apk"
-          ls -lh fog-of-world-*.apk
+          cp "$APK" "fog-of-world-$VERSION.apk"
+          ls -lh "fog-of-world-$VERSION.apk"
 
       - name: 發佈 Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.event.inputs.tag || github.ref_name }}
           VERSION: ${{ steps.version.outputs.name }}
           SIGNED_WITH: ${{ steps.signing.outputs.signed }}
         run: |
+          set -euo pipefail
+          TAG="v$VERSION"
           NOTES=$(cat <<EOF
           ## 世界迷霧 $VERSION（Android）
 
@@ -84,7 +126,7 @@ jobs:
           **安裝方式**：手機直接點下面的 \`fog-of-world-$VERSION.apk\` 下載開啟，
           第一次會要求允許「安裝未知來源的應用程式」。
 
-          ### 這個版本有什麼
+          ### 內容
           - 走路撥霧，走過的地方永久保留
           - **螢幕關掉、切到背景也會持續記錄**（前景服務）
           - 32 個成就、8 個階級、123 個世界地標護照
@@ -96,17 +138,16 @@ jobs:
           只給「使用應用程式時允許」也能玩，但畫面關掉就會停。
 
           ---
-          本 APK 以 $SIGNED_WITH 簽章。
-          若之後更新時出現「應用程式未安裝」，請先移除舊版再安裝。
+          本 APK 以 $SIGNED_WITH 簽章。若更新時出現「應用程式未安裝」，請先移除舊版再安裝。
           EOF
           )
-          gh release delete "$TAG" --yes || true
+          gh release delete "$TAG" --yes --cleanup-tag || true
           gh release create "$TAG" "fog-of-world-$VERSION.apk" \
-            --target "$GITHUB_SHA" \
+            --target "$(git rev-parse HEAD)" \
             --title "世界迷霧 $VERSION" \
             --notes "$NOTES"
           gh release view "$TAG" --json tagName,assets \
-            --jq '"已發佈 \(.tagName)：\(.assets[].name) (\(.assets[].size) bytes)"'
+            --jq '"已發佈 \(.tagName)：\(.assets[].name)（\(.assets[].size) bytes）"'
 
       - uses: actions/upload-artifact@v4
         with:

@@ -8,6 +8,25 @@ plugins {
 // CI 沒設定 secret 時環境變數會是空字串而不是未設定，所以空白也要當成「沒有金鑰」
 val releaseKeystore: String? = System.getenv("FOW_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
 
+/*
+ * 版本規則：年份尾數.月份[.小版本]，例如 26.8、26.8.1、26.9。
+ *
+ * versionName 是給人看的，Android 判斷新舊看的是 versionCode，必須遞增。
+ * 若直接用 2608 / 2609，小版本 26.8.1 會夾不進去，裝置就會拒絕更新，
+ * 所以這裡編成 YYMMPP：26.8 → 260800、26.8.1 → 260801、26.9 → 260900。
+ * 每個月最多 99 個小版本，且跨年遞增（27.1 → 270100）。
+ */
+val appVersionName = "26.8"
+
+val appVersionCode = run {
+    val m = Regex("""^(\d{2})\.(\d{1,2})(?:\.(\d{1,2}))?$""").find(appVersionName)
+        ?: throw GradleException("版本號格式錯誤：$appVersionName，應為 年份尾數.月份[.小版本]，例如 26.8 或 26.8.1")
+    val (yy, mm, patch) = m.destructured
+    val month = mm.toInt()
+    if (month !in 1..12) throw GradleException("月份必須介於 1 到 12：$appVersionName")
+    yy.toInt() * 10000 + month * 100 + (patch.ifEmpty { "0" }).toInt()
+}
+
 android {
     namespace = "com.fogofworld"
     compileSdk = 35
@@ -27,8 +46,8 @@ android {
         applicationId = "com.fogofworld"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2608
-        versionName = "26.8"
+        versionCode = appVersionCode
+        versionName = appVersionName
         resourceConfigurations += listOf("zh", "en")
     }
 

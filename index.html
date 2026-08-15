@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0d1117">
+<meta name="description" content="世界迷霧：戰後大霧籠罩世界，用雙腳走出去，撥開迷霧、解鎖成就、造訪世界各地。">
+<title>世界迷霧 Fog of World</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+
+<div id="map" aria-label="世界地圖"></div>
+
+<!-- ── 頂部狀態列 ───────────────────────────────────────── -->
+<header class="topbar" id="topbar">
+  <div class="rank">
+    <div class="rank-badge" id="rankIcon">🌫️</div>
+    <div class="rank-text">
+      <div class="rank-name" id="rankName">迷霧新兵</div>
+      <div class="rank-bar"><span id="rankFill"></span></div>
+    </div>
+  </div>
+  <div class="chips">
+    <div class="chip"><b id="statDistance">0.00</b><span>公里</span></div>
+    <div class="chip"><b id="statArea">0.00</b><span>km² 已撥霧</span></div>
+    <div class="chip"><b id="statLandmarks">0</b><span>地標</span></div>
+  </div>
+  <div class="profile-flag" id="profileFlag" hidden>模擬模式</div>
+</header>
+
+<!-- ── GPS 狀態 ─────────────────────────────────────────── -->
+<div class="gps-status" id="gpsStatus" hidden><span class="dot"></span><span id="gpsText">尚未定位</span></div>
+
+<!-- ── 底部工具列 ───────────────────────────────────────── -->
+<nav class="dock">
+  <button class="dock-btn" id="btnAchievements" aria-label="成就"><span>🏅</span>成就</button>
+  <button class="dock-btn" id="btnPassport" aria-label="護照"><span>🛂</span>護照</button>
+  <button class="dock-btn dock-main" id="btnWalk" aria-label="開始探索"><span id="btnWalkIcon">🚶</span><em id="btnWalkText">開始探索</em></button>
+  <button class="dock-btn" id="btnLocate" aria-label="回到我的位置"><span>🎯</span>定位</button>
+  <button class="dock-btn" id="btnSettings" aria-label="設定"><span>⚙️</span>設定</button>
+</nav>
+
+<!-- ── 模擬模式操縱桿 ───────────────────────────────────── -->
+<div class="sim-pad" id="simPad" hidden>
+  <div class="sim-hint">模擬模式：點擊地圖或用方向鍵 / WASD 移動</div>
+  <div class="sim-keys">
+    <button data-dir="up">▲</button>
+    <div>
+      <button data-dir="left">◀</button>
+      <button data-dir="down">▼</button>
+      <button data-dir="right">▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 面板：成就 ───────────────────────────────────────── -->
+<section class="sheet" id="sheetAchievements" hidden>
+  <div class="sheet-head">
+    <h2>🏅 成就</h2>
+    <div class="sheet-sub" id="achSummary">0 / 0 已解鎖</div>
+    <button class="sheet-close" data-close>✕</button>
+  </div>
+  <div class="sheet-body"><div class="ach-grid" id="achList"></div></div>
+</section>
+
+<!-- ── 面板：世界護照 ───────────────────────────────────── -->
+<section class="sheet" id="sheetPassport" hidden>
+  <div class="sheet-head">
+    <h2>🛂 世界護照</h2>
+    <div class="sheet-sub" id="passSummary">0 / 0 個地標</div>
+    <button class="sheet-close" data-close>✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="nearest" id="nearestBox" hidden></div>
+    <div id="passList"></div>
+  </div>
+</section>
+
+<!-- ── 面板：設定 ───────────────────────────────────────── -->
+<section class="sheet" id="sheetSettings" hidden>
+  <div class="sheet-head">
+    <h2>⚙️ 設定</h2>
+    <button class="sheet-close" data-close>✕</button>
+  </div>
+  <div class="sheet-body">
+    <label class="row">
+      <div><b>撥霧半徑</b><small>走過的地方會清除多大範圍</small></div>
+      <div class="row-ctl"><input type="range" id="setRadius" min="20" max="200" step="10"><output id="outRadius"></output></div>
+    </label>
+    <label class="row">
+      <div><b>迷霧濃度</b><small>未探索區域的暗度</small></div>
+      <div class="row-ctl"><input type="range" id="setOpacity" min="30" max="100" step="5"><output id="outOpacity"></output></div>
+    </label>
+    <label class="row">
+      <div><b>GPS 精度門檻</b><small>誤差大於此值的定位會被忽略</small></div>
+      <div class="row-ctl"><input type="range" id="setAccuracy" min="10" max="200" step="10"><output id="outAccuracy"></output></div>
+    </label>
+    <label class="row">
+      <div><b>畫面跟隨我</b><small>移動時地圖自動置中</small></div>
+      <div class="row-ctl"><input type="checkbox" id="setFollow"></div>
+    </label>
+    <label class="row">
+      <div><b>模擬模式</b><small>不用真的走路也能試玩，資料獨立儲存</small></div>
+      <div class="row-ctl"><input type="checkbox" id="setSim"></div>
+    </label>
+    <label class="row" id="rowSimSpeed">
+      <div><b>模擬速度</b><small>模擬行走的速度</small></div>
+      <div class="row-ctl"><input type="range" id="setSimSpeed" min="2" max="60" step="2"><output id="outSimSpeed"></output></div>
+    </label>
+    <div class="row-actions">
+      <button class="btn" id="btnExport">📤 匯出存檔</button>
+      <button class="btn" id="btnImport">📥 匯入存檔</button>
+      <button class="btn danger" id="btnReset">🗑️ 清除此檔案</button>
+    </div>
+    <input type="file" id="fileImport" accept="application/json" hidden>
+    <p class="fineprint">
+      所有位置資料只會存在這台裝置的瀏覽器中，不會上傳到任何伺服器。<br>
+      地圖圖磚來源 © OpenStreetMap 貢獻者。
+    </p>
+  </div>
+</section>
+
+<!-- ── 開場 ─────────────────────────────────────────────── -->
+<div class="intro" id="intro">
+  <div class="intro-card">
+    <div class="intro-fog">🌫️</div>
+    <h1>世界迷霧</h1>
+    <p class="lore">
+      戰爭結束了，留下的是一場不散的大霧。<br>
+      地圖失效、道路被遺忘，世界只剩下你腳下這一小塊光。<br><br>
+      <b>唯一能撥開迷霧的方法，是親自走過去。</b>
+    </p>
+    <button class="btn primary big" id="btnStart">開始撥霧</button>
+    <button class="btn ghost" id="btnStartSim">先用模擬模式試玩</button>
+    <p class="fineprint">需要開啟定位權限。資料只留在你的裝置上。</p>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

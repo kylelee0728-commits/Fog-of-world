@@ -4,8 +4,20 @@
 > 地圖失效、道路被遺忘，世界只剩下你腳下這一小塊光。
 > **唯一能撥開迷霧的方法，是親自走過去。**
 
-一個純前端的步行探索 App：整個世界被一層戰後迷霧蓋住，你走過的地方會被永久地撥開，
+一個步行探索 App：整個世界被一層戰後迷霧蓋住，你走過的地方會被永久地撥開，
 留下屬於自己的世界地圖。走得越多，階級越高，解鎖成就、蓋滿世界護照。
+
+有兩個版本，玩法與資料模型完全相同：
+
+| | 網頁版（PWA） | **Android 原生版** |
+| --- | --- | --- |
+| 位置 | 專案根目錄 | [`android/`](android/) |
+| 技術 | 原生 JS + Leaflet | Kotlin + Jetpack Compose + osmdroid |
+| 螢幕關掉時 | ❌ 會停止記錄 | ✅ **前景服務持續記錄** |
+| 安裝 | 開網址即可，可加入主畫面 | 下載 APK |
+
+> **想整趟走完都被記錄，就用 Android 版。** 手機瀏覽器在鎖屏或切到背景後會停止提供定位，
+> 這是瀏覽器的限制，網頁版無解；原生版用前景服務加上 wake lock 解決。
 
 ![授權](https://img.shields.io/badge/license-Apache--2.0-blue) ![無需後端](https://img.shields.io/badge/backend-none-green) ![PWA](https://img.shields.io/badge/PWA-offline%20ready-purple)
 
@@ -45,6 +57,54 @@ python3 -m http.server 8000     # 或 npx http-server -p 8000
 - 模擬速度可在設定調整
 
 模擬資料存在**獨立的存檔**（`demo`），不會污染真實的步行紀錄。
+
+## Android 原生版
+
+### 安裝
+
+每次推上 `main`，GitHub Actions 會自動建置並更新這個 Release：
+
+**<https://github.com/kylelee0728-commits/Fog-of-world/releases/tag/android-latest>**
+
+手機直接點 `fog-of-world.apk` 下載安裝即可（第一次要允許「安裝未知來源的應用程式」）。
+這是 debug 簽章的版本，適合自己用；要上架 Play 商店才需要另外做正式簽章。
+
+### 自己編譯
+
+```bash
+cd android
+./gradlew assembleDebug
+# 產物：app/build/outputs/apk/debug/app-debug.apk
+```
+
+需要 JDK 17 與 Android SDK（compileSdk 35）。
+
+### 權限說明
+
+| 權限 | 為什麼需要 |
+| --- | --- |
+| 位置（精確） | 撥霧的唯一依據 |
+| 位置「一律允許」 | 螢幕關掉、切到背景時繼續記錄；不給也能用，但只在 App 開著時記錄 |
+| 通知 | 前景服務的常駐通知，顯示里程與階級，可直接暫停 |
+| WAKE_LOCK | 螢幕關閉後仍能收到定位回呼 |
+
+定位用系統的 `LocationManager`，**不依賴 Google Play 服務**，沒有 GMS 的裝置也能跑。
+一樣沒有後端、沒有帳號，所有資料都留在手機裡。
+
+### 兩個版本怎麼共用資料
+
+地標資料只有一份：`src/landmarks.js` 產生出 `android/app/src/main/assets/landmarks.json`，
+CI 會檢查兩者是否一致，不一致就讓建置失敗。要改地標時改 JS 那份，然後重新產生：
+
+```bash
+node --input-type=module -e "
+import { LANDMARKS } from './src/landmarks.js';
+import { writeFileSync } from 'fs';
+writeFileSync('android/app/src/main/assets/landmarks.json', JSON.stringify(LANDMARKS));
+"
+```
+
+足跡本身兩版各自獨立儲存，目前不會互通。
 
 ## 運作方式
 

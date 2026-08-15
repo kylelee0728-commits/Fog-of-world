@@ -119,23 +119,26 @@ jobs:
           set -euo pipefail
           TAG="v$VERSION"
           NOTES=$(cat <<EOF
-          ## 世界迷霧 $VERSION（Android）
+          ## 拾光者 $VERSION（Android）
 
-          戰後大霧籠罩世界，用雙腳走出去撥開迷霧。
+          世界的光開始遺失，只有親自走過的地方光會回來。
 
           **安裝方式**：手機直接點下面的 \`fog-of-world-$VERSION.apk\` 下載開啟，
           第一次會要求允許「安裝未知來源的應用程式」。
 
           ### 內容
-          - 走路撥霧，走過的地方永久保留
+          - 走路點亮世界，走過的地方永久保留
           - **螢幕關掉、切到背景也會持續記錄**（前景服務）
-          - 32 個成就、8 個階級、123 個世界地標護照
+          - 32 個成就、8 個稱號、123 個世界地標護照
           - 沒有後端也沒有帳號，所有位置資料只留在手機裡
           - 定位使用系統服務，不需要 Google Play 服務
 
           ### 權限
           走路時請把定位設成「一律允許」，才能在鎖屏後繼續記錄；
           只給「使用應用程式時允許」也能玩，但畫面關掉就會停。
+
+          ### 更新
+          App 內建自動更新，之後的版本會在開啟時提示，不必再回到這裡下載。
 
           ---
           本 APK 以 $SIGNED_WITH 簽章。若更新時出現「應用程式未安裝」，請先移除舊版再安裝。
@@ -144,7 +147,7 @@ jobs:
           gh release delete "$TAG" --yes --cleanup-tag || true
           gh release create "$TAG" "fog-of-world-$VERSION.apk" \
             --target "$(git rev-parse HEAD)" \
-            --title "世界迷霧 $VERSION" \
+            --title "拾光者 $VERSION" \
             --notes "$NOTES"
           gh release view "$TAG" --json tagName,assets \
             --jq '"已發佈 \(.tagName)：\(.assets[].name)（\(.assets[].size) bytes）"'

@@ -1,0 +1,38 @@
+package com.fogofworld.data
+
+import android.content.Context
+import androidx.core.content.edit
+
+/** 使用者設定（SharedPreferences，不需要額外相依） */
+object Settings {
+
+    private const val FILE = "fow_settings"
+    private const val KEY_RADIUS = "reveal_radius"
+    private const val KEY_OPACITY = "fog_opacity"
+    private const val KEY_ACCURACY = "accuracy_limit"
+    private const val KEY_FOLLOW = "follow"
+    private const val KEY_INTERVAL = "interval_sec"
+    private const val KEY_SEEN_INTRO = "seen_intro"
+
+    private fun prefs(context: Context) =
+        context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+
+    fun revealRadius(context: Context): Int = prefs(context).getInt(KEY_RADIUS, 60)
+    fun setRevealRadius(context: Context, v: Int) = prefs(context).edit { putInt(KEY_RADIUS, v) }
+
+    fun fogOpacity(context: Context): Int = prefs(context).getInt(KEY_OPACITY, 88)
+    fun setFogOpacity(context: Context, v: Int) = prefs(context).edit { putInt(KEY_OPACITY, v) }
+
+    fun accuracyLimit(context: Context): Int = prefs(context).getInt(KEY_ACCURACY, 60)
+    fun setAccuracyLimit(context: Context, v: Int) = prefs(context).edit { putInt(KEY_ACCURACY, v) }
+
+    fun follow(context: Context): Boolean = prefs(context).getBoolean(KEY_FOLLOW, true)
+    fun setFollow(context: Context, v: Boolean) = prefs(context).edit { putBoolean(KEY_FOLLOW, v) }
+
+    /** 定位更新間隔（秒）；越長越省電 */
+    fun intervalSec(context: Context): Int = prefs(context).getInt(KEY_INTERVAL, 3)
+    fun setIntervalSec(context: Context, v: Int) = prefs(context).edit { putInt(KEY_INTERVAL, v) }
+
+    fun seenIntro(context: Context): Boolean = prefs(context).getBoolean(KEY_SEEN_INTRO, false)
+    fun setSeenIntro(context: Context, v: Boolean) = prefs(context).edit { putBoolean(KEY_SEEN_INTRO, v) }
+}

@@ -1,0 +1,464 @@
+package com.fogofworld.ui
+
+import android.widget.FrameLayout
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fogofworld.data.FogStore
+import com.fogofworld.data.Landmarks
+import com.fogofworld.data.Ranks
+import com.fogofworld.data.Settings
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+
+private enum class Sheet { NONE, ACHIEVEMENTS, PASSPORT, SETTINGS }
+
+data class Toast(val id: Long, val icon: String, val title: String, val sub: String)
+
+@Composable
+fun FogScreen(
+    walking: Boolean,
+    onToggleWalk: () -> Unit,
+    onRequestBackground: () -> Unit,
+    hasBackgroundPermission: Boolean,
+) {
+    val context = LocalContext.current
+    val stats by FogStore.stats.collectAsStateWithLifecycle()
+    var sheet by remember { mutableStateOf(Sheet.NONE) }
+    var showIntro by remember { mutableStateOf(!Settings.seenIntro(context)) }
+    val toasts = remember { mutableStateListOf<Toast>() }
+
+    var mapView by remember { mutableStateOf<MapView?>(null) }
+    var fogView by remember { mutableStateOf<FogView?>(null) }
+    var follow by remember { mutableStateOf(Settings.follow(context)) }
+    var radius by remember { mutableStateOf(Settings.revealRadius(context)) }
+    var opacity by remember { mutableStateOf(Settings.fogOpacity(context)) }
+    var accuracy by remember { mutableStateOf(Settings.accuracyLimit(context)) }
+    var interval by remember { mutableStateOf(Settings.intervalSec(context)) }
+
+    // 事件：撥霧重畫、跟隨鏡頭、成就與蓋章提示
+    LaunchedEffect(Unit) {
+        FogStore.events.collect { event ->
+            when (event) {
+                is FogStore.Event.FogChanged -> {
+                    fogView?.invalidate()
+                    if (follow) {
+                        FogStore.lastFix?.let { fix ->
+                            mapView?.controller?.animateTo(GeoPoint(fix.lat, fix.lng))
+                        }
+                    }
+                }
+
+                is FogStore.Event.Unlocked -> {
+                    event.achievements.take(2).forEach {
+                        toasts.add(Toast(System.nanoTime(), it.icon, "成就解鎖：${it.name}", it.desc))
+                    }
+                    if (event.achievements.size > 2) {
+                        toasts.add(
+                            Toast(
+                                System.nanoTime(), "🏅",
+                                "另外還解鎖了 ${event.achievements.size - 2} 個成就", "到「成就」看看拿了哪些",
+                            )
+                        )
+                    }
+                }
+
+                is FogStore.Event.Stamped -> {
+                    event.landmarks.take(2).forEach {
+                        toasts.add(
+                            Toast(System.nanoTime(), it.icon, "護照蓋章：${it.zh}", "${it.country} · ${it.continent}")
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // 提示訊息自動消失
+    LaunchedEffect(toasts.size) {
+        if (toasts.isNotEmpty()) {
+            kotlinx.coroutines.delay(4500)
+            if (toasts.isNotEmpty()) toasts.removeAt(0)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { FogStore.flush(force = true) }
+    }
+
+    Box(Modifier.fillMaxSize().background(FogBg)) {
+
+        // ── 地圖 + 迷霧 ──────────────────────────────
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                val map = MapView(ctx).apply {
+                    setTileSource(TileSourceFactory.MAPNIK)
+                    setMultiTouchControls(true)
+                    zoomController.setVisibility(
+                        org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER
+                    )
+                    val start = FogStore.lastFix
+                    controller.setZoom(if (start != null) 16.0 else 3.0)
+                    controller.setCenter(
+                        GeoPoint(start?.lat ?: 25.0339, start?.lng ?: 121.5645)
+                    )
+                }
+                val fog = FogView(ctx, map).apply {
+                    radiusM = Settings.revealRadius(ctx).toDouble()
+                    this.opacity = Settings.fogOpacity(ctx) / 100f
+                }
+                map.addMapListener(object : MapListener {
+                    override fun onScroll(event: ScrollEvent?): Boolean {
+                        fog.invalidate(); return false
+                    }
+
+                    override fun onZoom(event: ZoomEvent?): Boolean {
+                        fog.invalidate(); return false
+                    }
+                })
+                mapView = map
+                fogView = fog
+                FrameLayout(ctx).apply {
+                    addView(map, FrameLayout.LayoutParams(-1, -1))
+                    addView(fog, FrameLayout.LayoutParams(-1, -1))
+                }
+            },
+        )
+
+        // ── 頂部狀態 ────────────────────────────────
+        Column(
+            Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xF0060910), Color(0xB0060910), Color(0x00060910))
+                    )
+                )
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        ) {
+            val rank = Ranks.of(stats.areaKm2)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(FogAccent.copy(alpha = 0.12f))
+                        .border(1.dp, FogAccent.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center,
+                ) { Text(rank.rank.icon, fontSize = 19.sp) }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Lv.${rank.level} ${rank.rank.name}",
+                        color = FogText, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(5.dp))
+                    LinearProgressIndicator(
+                        progress = { rank.fraction },
+                        modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(4.dp)),
+                        color = FogAccent,
+                        trackColor = Color.White.copy(alpha = 0.12f),
+                        drawStopIndicator = {},
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatChip(Modifier.weight(1f), String.format("%.2f", stats.distanceM / 1000), "公里")
+                StatChip(
+                    Modifier.weight(1f),
+                    if (stats.areaKm2 < 10) String.format("%.2f", stats.areaKm2)
+                    else String.format("%.1f", stats.areaKm2),
+                    "km² 已撥霧",
+                )
+                StatChip(Modifier.weight(1f), "${stats.landmarks}", "地標")
+            }
+            if (walking && !hasBackgroundPermission) {
+                Spacer(Modifier.height(8.dp))
+                BackgroundHint(onRequestBackground)
+            }
+        }
+
+        // ── 提示訊息 ────────────────────────────────
+        Column(
+            Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = 150.dp, start = 16.dp, end = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            toasts.takeLast(4).forEach { t ->
+                AnimatedVisibility(true, enter = fadeIn(), exit = fadeOut()) {
+                    Surface(
+                        color = Color(0xFF3A2D14),
+                        shape = RoundedCornerShape(14.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, FogAccent.copy(alpha = 0.55f)),
+                    ) {
+                        Row(
+                            Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(t.icon, fontSize = 24.sp)
+                            Spacer(Modifier.width(11.dp))
+                            Column {
+                                Text(t.title, color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                if (t.sub.isNotEmpty()) {
+                                    Text(t.sub, color = FogMuted, fontSize = 11.5.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── 底部工具列 ──────────────────────────────
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(10.dp)
+                .fillMaxWidth(),
+            color = FogPanel.copy(alpha = 0.94f),
+            shape = RoundedCornerShape(20.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, FogLine),
+        ) {
+            Row(
+                Modifier.padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                DockButton(Modifier.weight(1f), "🏅", "成就") { sheet = Sheet.ACHIEVEMENTS }
+                DockButton(Modifier.weight(1f), "🛂", "護照") { sheet = Sheet.PASSPORT }
+                Button(
+                    onClick = onToggleWalk,
+                    modifier = Modifier.weight(1.5f).height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (walking) FogTeal else FogAccent,
+                        contentColor = Color(0xFF10161F),
+                    ),
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(if (walking) "⏸️" else "🚶", fontSize = 17.sp)
+                        Text(
+                            if (walking) "暫停探索" else "開始探索",
+                            fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                DockButton(Modifier.weight(1f), "🎯", "定位") {
+                    FogStore.lastFix?.let {
+                        mapView?.controller?.animateTo(GeoPoint(it.lat, it.lng))
+                        mapView?.controller?.setZoom(16.0)
+                    }
+                }
+                DockButton(Modifier.weight(1f), "⚙️", "設定") { sheet = Sheet.SETTINGS }
+            }
+        }
+
+        // ── 面板 ────────────────────────────────────
+        when (sheet) {
+            Sheet.ACHIEVEMENTS -> AchievementSheet(stats) { sheet = Sheet.NONE }
+            Sheet.PASSPORT -> PassportSheet(
+                onPick = { lm ->
+                    sheet = Sheet.NONE
+                    mapView?.controller?.animateTo(GeoPoint(lm.lat, lm.lng))
+                    mapView?.controller?.setZoom(13.0)
+                },
+                onDismiss = { sheet = Sheet.NONE },
+            )
+
+            Sheet.SETTINGS -> SettingsSheet(
+                radius = radius,
+                opacity = opacity,
+                accuracy = accuracy,
+                interval = interval,
+                follow = follow,
+                hasBackground = hasBackgroundPermission,
+                onRadius = {
+                    radius = it
+                    Settings.setRevealRadius(context, it)
+                    FogStore.revealRadius = it.toDouble()
+                    fogView?.radiusM = it.toDouble()
+                },
+                onOpacity = {
+                    opacity = it
+                    Settings.setFogOpacity(context, it)
+                    fogView?.opacity = it / 100f
+                },
+                onAccuracy = { accuracy = it; Settings.setAccuracyLimit(context, it) },
+                onInterval = { interval = it; Settings.setIntervalSec(context, it) },
+                onFollow = { follow = it; Settings.setFollow(context, it) },
+                onRequestBackground = onRequestBackground,
+                onReset = {
+                    FogStore.reset()
+                    fogView?.invalidate()
+                },
+                onDismiss = { sheet = Sheet.NONE },
+            )
+
+            Sheet.NONE -> Unit
+        }
+
+        // ── 開場 ────────────────────────────────────
+        if (showIntro) {
+            IntroOverlay {
+                Settings.setSeenIntro(context, true)
+                showIntro = false
+                onToggleWalk()
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatChip(modifier: Modifier, value: String, label: String) {
+    Surface(
+        modifier = modifier,
+        color = FogPanel.copy(alpha = 0.92f),
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, FogLine),
+    ) {
+        Column(
+            Modifier.padding(vertical = 7.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(value, color = FogText, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(label, color = FogMuted, fontSize = 10.sp)
+        }
+    }
+}
+
+@Composable
+private fun DockButton(modifier: Modifier, icon: String, label: String, onClick: () -> Unit) {
+    TextButton(onClick = onClick, modifier = modifier) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(icon, fontSize = 18.sp)
+            Text(label, color = FogMuted, fontSize = 10.sp)
+        }
+    }
+}
+
+@Composable
+private fun BackgroundHint(onRequest: () -> Unit) {
+    Surface(
+        color = FogTeal.copy(alpha = 0.12f),
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, FogTeal.copy(alpha = 0.4f)),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("螢幕關掉後就不會記錄", color = FogText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("允許「一律允許」定位才能整趟記錄", color = FogMuted, fontSize = 11.sp)
+            }
+            TextButton(onClick = onRequest) { Text("去允許", color = FogTeal, fontSize = 12.sp) }
+        }
+    }
+}
+
+@Composable
+private fun IntroOverlay(onStart: () -> Unit) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(listOf(Color(0xFF182231), Color(0xFF080B10)))
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("🌫️", fontSize = 58.sp)
+            Spacer(Modifier.height(8.dp))
+            Text("世界迷霧", color = FogText, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(18.dp))
+            Text(
+                "戰爭結束了，留下的是一場不散的大霧。\n" +
+                    "地圖失效、道路被遺忘，世界只剩下你腳下這一小塊光。",
+                color = FogMuted, fontSize = 13.sp, textAlign = TextAlign.Center, lineHeight = 24.sp,
+            )
+            Spacer(Modifier.height(14.dp))
+            Text(
+                "唯一能撥開迷霧的方法，是親自走過去。",
+                color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(28.dp))
+            Button(
+                onClick = onStart,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = FogAccent, contentColor = Color(0xFF10161F)
+                ),
+            ) { Text("開始撥霧", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
+            Spacer(Modifier.height(14.dp))
+            Text(
+                "需要定位權限。資料只留在這台手機上，不會上傳。",
+                color = FogMuted, fontSize = 11.sp, textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+/** 讓 Sheet 共用的視窗留白 */
+val sheetInsets: WindowInsets
+    @Composable get() = WindowInsets(0, 0, 0, 0)
+
+internal fun landmarkCount(context: android.content.Context): Int = Landmarks.all(context).size

@@ -48,7 +48,9 @@ android {
         targetSdk = 35
         versionCode = appVersionCode
         versionName = appVersionName
-        resourceConfigurations += listOf("zh", "en")
+        // 只保留我們自己翻譯的語言（會連帶剝掉相依套件的其他語系，縮小 APK）。
+        // 漏列任何一個語言，該語言的字串會在建置時被整個剝掉。
+        resourceConfigurations += listOf("en", "ja", "zh")
     }
 
     buildTypes {

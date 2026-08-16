@@ -16,7 +16,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import android.content.Context
+import com.fogofworld.data.AppLanguage
 import com.fogofworld.data.FogStore
+import com.fogofworld.data.LocaleHelper
 import com.fogofworld.data.Settings
 import com.fogofworld.data.UpdateChecker
 import com.fogofworld.location.LocationService
@@ -62,6 +65,11 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) readBackup(uri) }
 
+    /** 套用 App 內的語言設定；Service 也要做一樣的事 */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -82,6 +90,7 @@ class MainActivity : ComponentActivity() {
                     onInstallUpdate = { installUpdate() },
                     onGrantInstallPermission = { UpdateChecker.openInstallPermissionSettings(this) },
                     onDismissUpdate = { updateState = UpdateState.Idle },
+                    onLanguage = { setLanguage(it) },
                     onExport = { exportFile.launch(defaultBackupName()) },
                     onImport = { importFile.launch(arrayOf("application/json", "text/plain", "*/*")) },
                 )
@@ -174,11 +183,18 @@ class MainActivity : ComponentActivity() {
         walking = true
     }
 
+    /** 換語言：存起來後重建畫面，整個 App 立刻換掉 */
+    private fun setLanguage(language: AppLanguage) {
+        if (Settings.languageTag(this) == language.tag) return
+        Settings.setLanguageTag(this, language.tag)
+        recreate()
+    }
+
     // ── 備份 ────────────────────────────────────────────
 
     private fun defaultBackupName(): String {
         val day = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-        return "fog-of-world-$day.json"
+        return "lightfarer-$day.json"
     }
 
     private fun writeBackup(uri: Uri) {
@@ -191,7 +207,7 @@ class MainActivity : ComponentActivity() {
                 }.getOrDefault(false)
             }
             updateState = UpdateState.Message(
-                if (ok) "存檔已匯出。這個檔案網頁版也能匯入。" else "匯出失敗，請換個位置再試一次。"
+                getString(if (ok) R.string.backup_exported else R.string.backup_export_failed)
             )
         }
     }
@@ -207,7 +223,7 @@ class MainActivity : ComponentActivity() {
                 }.getOrDefault(false)
             }
             updateState = UpdateState.Message(
-                if (ok) "存檔已匯入，地圖已經照新的紀錄重畫。" else "匯入失敗：檔案格式看起來不是拾光者的存檔。"
+                getString(if (ok) R.string.backup_imported else R.string.backup_import_failed)
             )
         }
     }
@@ -228,9 +244,14 @@ class MainActivity : ComponentActivity() {
             when (val result = UpdateChecker.check(BuildConfig.VERSION_NAME)) {
                 is UpdateChecker.Result.Available -> updateState = UpdateState.Found(result.release)
                 is UpdateChecker.Result.UpToDate ->
-                    updateState = if (manual) UpdateState.Message("已經是最新版本 ${BuildConfig.VERSION_NAME}") else UpdateState.Idle
+                    updateState = if (manual) {
+                        UpdateState.Message(getString(R.string.update_uptodate, BuildConfig.VERSION_NAME))
+                    } else UpdateState.Idle
+
                 is UpdateChecker.Result.Failed ->
-                    updateState = if (manual) UpdateState.Message("檢查更新失敗：${result.reason}") else UpdateState.Idle
+                    updateState = if (manual) {
+                        UpdateState.Message(getString(R.string.update_failed, result.reason))
+                    } else UpdateState.Idle
             }
         }
     }
@@ -247,14 +268,14 @@ class MainActivity : ComponentActivity() {
                 lifecycleScope.launch { updateState = UpdateState.Downloading(p) }
             }
             if (file == null) {
-                updateState = UpdateState.Message("下載失敗，請確認網路後再試一次。")
+                updateState = UpdateState.Message(getString(R.string.update_dl_failed))
                 return@launch
             }
             downloadedApk = file
             // 安裝前先把進度寫進檔案，避免安裝過程中遺失
             FogStore.flush(force = true)
             if (!UpdateChecker.install(this@MainActivity, file)) {
-                updateState = UpdateState.Message("叫不出安裝畫面，可以到設定手動安裝下載好的檔案。")
+                updateState = UpdateState.Message(getString(R.string.update_install_failed))
             } else {
                 updateState = UpdateState.Idle
             }

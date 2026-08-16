@@ -259,6 +259,12 @@ object FogStore {
     /** 每日里程（YYYY-MM-DD → 公尺），統計頁用 */
     fun dailyDistances(): Map<String, Double> = HashMap(days)
 
+    /** 今天走了多少公尺 */
+    fun todayDistance(): Double = days[dayKey(System.currentTimeMillis())] ?: 0.0
+
+    /** 今天的日期鍵，服務判斷目標達成用 */
+    fun todayKey(): String = dayKey(System.currentTimeMillis())
+
     // ── 備份：格式與網頁版相同，兩邊可以互相匯入 ──────────
 
     fun exportJson(): String {

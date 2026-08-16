@@ -1,11 +1,18 @@
 package com.fogofworld.data
 
-/** 成就：以「目前數值 / 目標數值」判定，達標即解鎖 */
+import androidx.annotation.StringRes
+import com.fogofworld.R
+
+/**
+ * 成就：以「目前數值 / 目標數值」判定，達標即解鎖。
+ *
+ * id 是存進存檔的鍵，永遠不能改；顯示文字一律走字串資源，才能跟著語言切換。
+ */
 data class Achievement(
     val id: String,
     val icon: String,
-    val name: String,
-    val desc: String,
+    @StringRes val nameRes: Int,
+    @StringRes val descRes: Int,
     val target: Double,
     val value: (Stats) -> Double,
 )
@@ -13,45 +20,45 @@ data class Achievement(
 object Achievements {
 
     val ALL: List<Achievement> = listOf(
-        Achievement("first_step", "🥾", "第一步", "在長夜裡留下第一個腳印", 1.0) { it.cells.toDouble() },
+        Achievement("first_step", "🥾", R.string.ach_first_step_name, R.string.ach_first_step_desc, 1.0) { it.cells.toDouble() },
 
-        Achievement("dist_1", "👣", "千里之行", "累積步行 1 公里", 1_000.0) { it.distanceM },
-        Achievement("dist_5", "🚶", "城市漫遊", "累積步行 5 公里", 5_000.0) { it.distanceM },
-        Achievement("dist_10", "🏃", "十公里俱樂部", "累積步行 10 公里", 10_000.0) { it.distanceM },
-        Achievement("dist_42", "🏅", "馬拉松之魂", "累積步行 42.195 公里", 42_195.0) { it.distanceM },
-        Achievement("dist_100", "🛤️", "百里長征", "累積步行 100 公里", 100_000.0) { it.distanceM },
-        Achievement("dist_500", "🧭", "大陸縱走", "累積步行 500 公里", 500_000.0) { it.distanceM },
-        Achievement("dist_1000", "🌍", "環球起點", "累積步行 1000 公里", 1_000_000.0) { it.distanceM },
+        Achievement("dist_1", "👣", R.string.ach_dist_1_name, R.string.ach_dist_1_desc, 1_000.0) { it.distanceM },
+        Achievement("dist_5", "🚶", R.string.ach_dist_5_name, R.string.ach_dist_5_desc, 5_000.0) { it.distanceM },
+        Achievement("dist_10", "🏃", R.string.ach_dist_10_name, R.string.ach_dist_10_desc, 10_000.0) { it.distanceM },
+        Achievement("dist_42", "🏅", R.string.ach_dist_42_name, R.string.ach_dist_42_desc, 42_195.0) { it.distanceM },
+        Achievement("dist_100", "🛤️", R.string.ach_dist_100_name, R.string.ach_dist_100_desc, 100_000.0) { it.distanceM },
+        Achievement("dist_500", "🧭", R.string.ach_dist_500_name, R.string.ach_dist_500_desc, 500_000.0) { it.distanceM },
+        Achievement("dist_1000", "🌍", R.string.ach_dist_1000_name, R.string.ach_dist_1000_desc, 1_000_000.0) { it.distanceM },
 
-        Achievement("area_01", "✨", "初亮", "點亮 0.1 平方公里", 0.1) { it.areaKm2 },
-        Achievement("area_1", "🗺️", "一方天地", "點亮 1 平方公里", 1.0) { it.areaKm2 },
-        Achievement("area_10", "🏙️", "街區重光", "點亮 10 平方公里", 10.0) { it.areaKm2 },
-        Achievement("area_50", "🌆", "半城燈火", "點亮 50 平方公里", 50.0) { it.areaKm2 },
-        Achievement("area_100", "🌐", "破夜者", "點亮 100 平方公里", 100.0) { it.areaKm2 },
+        Achievement("area_01", "✨", R.string.ach_area_01_name, R.string.ach_area_01_desc, 0.1) { it.areaKm2 },
+        Achievement("area_1", "🗺️", R.string.ach_area_1_name, R.string.ach_area_1_desc, 1.0) { it.areaKm2 },
+        Achievement("area_10", "🏙️", R.string.ach_area_10_name, R.string.ach_area_10_desc, 10.0) { it.areaKm2 },
+        Achievement("area_50", "🌆", R.string.ach_area_50_name, R.string.ach_area_50_desc, 50.0) { it.areaKm2 },
+        Achievement("area_100", "🌐", R.string.ach_area_100_name, R.string.ach_area_100_desc, 100.0) { it.areaKm2 },
 
-        Achievement("streak_3", "📅", "三日不輟", "連續 3 天出門探索", 3.0) { it.streak.toDouble() },
-        Achievement("streak_7", "🔥", "一週堅持", "連續 7 天出門探索", 7.0) { it.streak.toDouble() },
-        Achievement("streak_30", "💎", "月之行者", "連續 30 天出門探索", 30.0) { it.streak.toDouble() },
-        Achievement("days_50", "🗓️", "五十日談", "累積 50 個探索日", 50.0) { it.activeDays.toDouble() },
-        Achievement("day_5k", "⚡", "單日五公里", "在同一天內走滿 5 公里", 5_000.0) { it.bestDayM },
-        Achievement("session_5k", "🎯", "一氣呵成", "單次探索走滿 5 公里", 5_000.0) { it.bestSessionM },
+        Achievement("streak_3", "📅", R.string.ach_streak_3_name, R.string.ach_streak_3_desc, 3.0) { it.streak.toDouble() },
+        Achievement("streak_7", "🔥", R.string.ach_streak_7_name, R.string.ach_streak_7_desc, 7.0) { it.streak.toDouble() },
+        Achievement("streak_30", "💎", R.string.ach_streak_30_name, R.string.ach_streak_30_desc, 30.0) { it.streak.toDouble() },
+        Achievement("days_50", "🗓️", R.string.ach_days_50_name, R.string.ach_days_50_desc, 50.0) { it.activeDays.toDouble() },
+        Achievement("day_5k", "⚡", R.string.ach_day_5k_name, R.string.ach_day_5k_desc, 5_000.0) { it.bestDayM },
+        Achievement("session_5k", "🎯", R.string.ach_session_5k_name, R.string.ach_session_5k_desc, 5_000.0) { it.bestSessionM },
 
-        Achievement("night", "🌙", "夜行者", "在凌晨 0 點到 4 點之間探索", 1.0) { it.nightWalk.toDouble() },
-        Achievement("dawn", "🌅", "拂曉偵察", "在清晨 5 點到 7 點之間探索", 1.0) { it.dawnWalk.toDouble() },
+        Achievement("night", "🌙", R.string.ach_night_name, R.string.ach_night_desc, 1.0) { it.nightWalk.toDouble() },
+        Achievement("dawn", "🌅", R.string.ach_dawn_name, R.string.ach_dawn_desc, 1.0) { it.dawnWalk.toDouble() },
 
-        Achievement("landmark_1", "📍", "世界的第一站", "造訪第 1 個世界地標", 1.0) { it.landmarks.toDouble() },
-        Achievement("landmark_5", "🎒", "背包客", "造訪 5 個世界地標", 5.0) { it.landmarks.toDouble() },
-        Achievement("landmark_15", "✈️", "旅人", "造訪 15 個世界地標", 15.0) { it.landmarks.toDouble() },
-        Achievement("landmark_30", "🏛️", "世界收藏家", "造訪 30 個世界地標", 30.0) { it.landmarks.toDouble() },
-        Achievement("continent_2", "🌏", "跨洲旅人", "在 2 個大洲留下足跡", 2.0) { it.continents.toDouble() },
-        Achievement("continent_4", "🌎", "四海為家", "在 4 個大洲留下足跡", 4.0) { it.continents.toDouble() },
-        Achievement("continent_6", "🌍", "六大洲征服者", "在 6 個大洲留下足跡", 6.0) { it.continents.toDouble() },
+        Achievement("landmark_1", "📍", R.string.ach_landmark_1_name, R.string.ach_landmark_1_desc, 1.0) { it.landmarks.toDouble() },
+        Achievement("landmark_5", "🎒", R.string.ach_landmark_5_name, R.string.ach_landmark_5_desc, 5.0) { it.landmarks.toDouble() },
+        Achievement("landmark_15", "✈️", R.string.ach_landmark_15_name, R.string.ach_landmark_15_desc, 15.0) { it.landmarks.toDouble() },
+        Achievement("landmark_30", "🏛️", R.string.ach_landmark_30_name, R.string.ach_landmark_30_desc, 30.0) { it.landmarks.toDouble() },
+        Achievement("continent_2", "🌏", R.string.ach_continent_2_name, R.string.ach_continent_2_desc, 2.0) { it.continents.toDouble() },
+        Achievement("continent_4", "🌎", R.string.ach_continent_4_name, R.string.ach_continent_4_desc, 4.0) { it.continents.toDouble() },
+        Achievement("continent_6", "🌍", R.string.ach_continent_6_name, R.string.ach_continent_6_desc, 6.0) { it.continents.toDouble() },
 
-        Achievement("alt_1000", "⛰️", "高地偵察", "在海拔 1000 公尺以上探索", 1_000.0) { it.maxAltitude },
-        Achievement("alt_2500", "🏔️", "雲上行者", "在海拔 2500 公尺以上探索", 2_500.0) { it.maxAltitude },
+        Achievement("alt_1000", "⛰️", R.string.ach_alt_1000_name, R.string.ach_alt_1000_desc, 1_000.0) { it.maxAltitude },
+        Achievement("alt_2500", "🏔️", R.string.ach_alt_2500_name, R.string.ach_alt_2500_desc, 2_500.0) { it.maxAltitude },
 
-        Achievement("cells_1000", "🌁", "拾光獵人", "點亮 1000 個光格", 1_000.0) { it.cells.toDouble() },
-        Achievement("cells_10000", "👑", "長夜終結者", "點亮 10000 個光格", 10_000.0) { it.cells.toDouble() },
+        Achievement("cells_1000", "🌁", R.string.ach_cells_1000_name, R.string.ach_cells_1000_desc, 1_000.0) { it.cells.toDouble() },
+        Achievement("cells_10000", "👑", R.string.ach_cells_10000_name, R.string.ach_cells_10000_desc, 10_000.0) { it.cells.toDouble() },
     )
 
     val COUNT = ALL.size
@@ -61,18 +68,18 @@ object Achievements {
         ALL.filter { it.id !in unlocked && it.value(stats) >= it.target }
 }
 
-data class Rank(val icon: String, val name: String, val at: Double)
+data class Rank(val icon: String, @StringRes val nameRes: Int, val at: Double)
 
 object Ranks {
     val ALL = listOf(
-        Rank("🕯️", "提燈人", 0.0),
-        Rank("🔦", "尋光者", 0.25),
-        Rank("🪔", "拾光者", 1.0),
-        Rank("🧭", "巡路人", 5.0),
-        Rank("🗺️", "繪光師", 15.0),
-        Rank("⚡", "破夜者", 40.0),
-        Rank("🌅", "曦光使者", 100.0),
-        Rank("👑", "白晝之主", 250.0),
+        Rank("🕯️", R.string.rank_1, 0.0),
+        Rank("🔦", R.string.rank_2, 0.25),
+        Rank("🪔", R.string.rank_3, 1.0),
+        Rank("🧭", R.string.rank_4, 5.0),
+        Rank("🗺️", R.string.rank_5, 15.0),
+        Rank("⚡", R.string.rank_6, 40.0),
+        Rank("🌅", R.string.rank_7, 100.0),
+        Rank("👑", R.string.rank_8, 250.0),
     )
 
     data class Progress(val rank: Rank, val level: Int, val next: Rank?, val fraction: Float)

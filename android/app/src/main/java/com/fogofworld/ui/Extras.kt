@@ -29,7 +29,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.fogofworld.R
 import com.fogofworld.data.Achievements
+import com.fogofworld.data.Format
 import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Ranks
 import com.fogofworld.data.Stats
@@ -46,10 +50,17 @@ fun StatsSheet(
     stats: Stats,
     daily: Map<String, Double>,
     landmarkTotal: Int,
+    dailyGoalM: Int,
+    todayM: Double,
     onDismiss: () -> Unit,
 ) {
+    val context = LocalContext.current
     val rank = Ranks.of(stats.areaKm2)
-    SheetScaffold("📊 我的紀錄", "Lv.${rank.level} ${rank.rank.name}", onDismiss) {
+    SheetScaffold(
+        stringResource(R.string.sheet_stats),
+        "Lv.${rank.level} " + stringResource(rank.rank.nameRes),
+        onDismiss,
+    ) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
 
             // 階級進度
@@ -64,13 +75,17 @@ fun StatsSheet(
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
-                                "Lv.${rank.level} ${rank.rank.name}",
+                                "Lv.${rank.level} " + stringResource(rank.rank.nameRes),
                                 color = FogText, fontSize = 15.sp, fontWeight = FontWeight.Bold,
                             )
                             Text(
                                 rank.next?.let {
-                                    "距離「${it.name}」還差 ${fmt2(it.at - stats.areaKm2)} km²"
-                                } ?: "已達最高階級",
+                                    stringResource(
+                                        R.string.stats_rank_next,
+                                        stringResource(it.nameRes),
+                                        Format.area(context, it.at - stats.areaKm2),
+                                    )
+                                } ?: stringResource(R.string.stats_max_rank),
                                 color = FogMuted, fontSize = 11.sp,
                             )
                         }
@@ -88,25 +103,50 @@ fun StatsSheet(
 
             Spacer(Modifier.height(14.dp))
 
-            // 近 14 天
-            Text("近 14 天", color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            // 每日目標
+            if (dailyGoalM > 0) {
+                Spacer(Modifier.height(14.dp))
+                val frac = (todayM / dailyGoalM).toFloat().coerceIn(0f, 1f)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.stats_goal_today),
+                        color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        Format.distance(context, todayM) + " / " + Format.distance(context, dailyGoalM.toDouble()),
+                        color = if (frac >= 1f) FogAccent else FogMuted, fontSize = 12.sp,
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = { frac },
+                    modifier = Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(5.dp)),
+                    color = if (frac >= 1f) FogAccent else FogTeal,
+                    trackColor = Color.White.copy(alpha = 0.12f),
+                    drawStopIndicator = {},
+                )
+            }
+
+            Spacer(Modifier.height(14.dp))
+            Text(stringResource(R.string.stats_recent), color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             DailyChart(daily)
 
             Spacer(Modifier.height(16.dp))
 
             val rows = listOf(
-                "總距離" to fmtDistance(stats.distanceM),
-                "已點亮面積" to "${fmt2(stats.areaKm2)} km²",
-                "光格數" to "${stats.cells}",
-                "探索天數" to "${stats.activeDays} 天",
-                "目前連續" to "${stats.streak} 天",
-                "單日最遠" to fmtDistance(stats.bestDayM),
-                "單次最長" to fmtDistance(stats.bestSessionM),
-                "最高海拔" to "${stats.maxAltitude.roundToInt()} 公尺",
-                "世界地標" to "${stats.landmarks} / $landmarkTotal",
-                "足跡大洲" to "${stats.continents} / ${Landmarks.CONTINENTS.size}",
-                "成就" to "${stats.achievementCount} / ${Achievements.COUNT}",
+                stringResource(R.string.row_distance) to Format.distance(context, stats.distanceM),
+                stringResource(R.string.row_area) to Format.area(context, stats.areaKm2),
+                stringResource(R.string.row_cells) to "${stats.cells}",
+                stringResource(R.string.row_days) to stringResource(R.string.days_unit, stats.activeDays),
+                stringResource(R.string.row_streak) to stringResource(R.string.days_unit, stats.streak),
+                stringResource(R.string.row_best_day) to Format.distance(context, stats.bestDayM),
+                stringResource(R.string.row_best_session) to Format.distance(context, stats.bestSessionM),
+                stringResource(R.string.row_altitude) to Format.altitude(context, stats.maxAltitude),
+                stringResource(R.string.row_landmarks) to "${stats.landmarks} / $landmarkTotal",
+                stringResource(R.string.row_continents) to "${stats.continents} / ${Landmarks.CONTINENTS.size}",
+                stringResource(R.string.row_achievements) to "${stats.achievementCount} / ${Achievements.COUNT}",
             )
             rows.forEach { (label, value) ->
                 Row(
@@ -124,6 +164,7 @@ fun StatsSheet(
 
 @Composable
 private fun DailyChart(daily: Map<String, Double>) {
+    val context = LocalContext.current
     val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     val labelFmt = SimpleDateFormat("d", Locale.US)
     val cal = Calendar.getInstance()
@@ -164,7 +205,7 @@ private fun DailyChart(daily: Map<String, Double>) {
     val total = bars.sumOf { it.second }
     Spacer(Modifier.height(6.dp))
     Text(
-        "這兩週共走了 ${fmtDistance(total)}",
+        stringResource(R.string.stats_recent_total, Format.distance(context, total)),
         color = FogMuted, fontSize = 11.sp, textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth(),
     )
@@ -193,34 +234,37 @@ fun UpdateDialog(
         is UpdateState.Found -> AlertDialog(
             onDismissRequest = onDismiss,
             containerColor = FogPanel,
-            title = { Text("有新版本 ${state.release.version}", color = FogText) },
+            title = { Text(stringResource(R.string.update_title, state.release.version), color = FogText) },
             text = {
                 Column {
                     Text(
-                        "目前是 $currentVersion，可以直接更新，走過的紀錄會保留。",
+                        stringResource(R.string.update_body, currentVersion),
                         color = FogMuted, fontSize = 13.sp,
                     )
                     if (state.release.sizeBytes > 0) {
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            "下載大小約 ${"%.1f".format(state.release.sizeBytes / 1024.0 / 1024.0)} MB",
+                            stringResource(
+                                R.string.update_size,
+                                String.format(Locale.getDefault(), "%.1f MB", state.release.sizeBytes / 1024.0 / 1024.0),
+                            ),
                             color = FogMuted, fontSize = 12.sp,
                         )
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = onInstall) { Text("下載並安裝", color = FogAccent) }
+                TextButton(onClick = onInstall) { Text(stringResource(R.string.update_download), color = FogAccent) }
             },
             dismissButton = {
-                TextButton(onClick = onDismiss) { Text("稍後再說", color = FogMuted) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.update_later), color = FogMuted) }
             },
         )
 
         is UpdateState.Downloading -> AlertDialog(
             onDismissRequest = {},
             containerColor = FogPanel,
-            title = { Text("下載中", color = FogText) },
+            title = { Text(stringResource(R.string.update_downloading), color = FogText) },
             text = {
                 Column {
                     if (state.progress >= 0f) {
@@ -248,19 +292,15 @@ fun UpdateDialog(
         is UpdateState.NeedPermission -> AlertDialog(
             onDismissRequest = onDismiss,
             containerColor = FogPanel,
-            title = { Text("需要安裝權限", color = FogText) },
+            title = { Text(stringResource(R.string.update_perm_title), color = FogText) },
             text = {
-                Text(
-                    "Android 需要你允許本 App 安裝應用程式，才能自動更新。\n" +
-                        "開啟後回到這裡再按一次更新即可。",
-                    color = FogMuted, fontSize = 13.sp,
-                )
+                Text(stringResource(R.string.update_perm_text), color = FogMuted, fontSize = 13.sp)
             },
             confirmButton = {
-                TextButton(onClick = onGrantPermission) { Text("去設定", color = FogAccent) }
+                TextButton(onClick = onGrantPermission) { Text(stringResource(R.string.update_goto_settings), color = FogAccent) }
             },
             dismissButton = {
-                TextButton(onClick = onDismiss) { Text("取消", color = FogMuted) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel), color = FogMuted) }
             },
         )
 
@@ -269,7 +309,7 @@ fun UpdateDialog(
             containerColor = FogPanel,
             text = { Text(state.text, color = FogText, fontSize = 14.sp) },
             confirmButton = {
-                TextButton(onClick = onDismiss) { Text("好", color = FogAccent) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok), color = FogAccent) }
             },
         )
 
@@ -279,8 +319,4 @@ fun UpdateDialog(
 
 // ── 共用 ───────────────────────────────────────────────
 
-internal fun fmt2(v: Double): String = String.format(Locale.US, "%.2f", v)
-
-internal fun fmtDistance(m: Double): String =
-    if (m < 1000) "${m.roundToInt()} 公尺"
-    else String.format(Locale.US, if (m < 10_000) "%.2f 公里" else "%.1f 公里", m / 1000)
+// 顯示格式一律走 Format，會跟著語言與單位設定

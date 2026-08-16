@@ -15,6 +15,10 @@ object Settings {
     private const val KEY_SEEN_INTRO = "seen_intro"
     private const val KEY_AUTO_UPDATE = "auto_update"
     private const val KEY_LAST_CHECK = "last_update_check"
+    private const val KEY_LANGUAGE = "language_tag"
+    private const val KEY_IMPERIAL = "imperial_units"
+    private const val KEY_DAILY_GOAL = "daily_goal_m"
+    private const val KEY_GOAL_DAY = "daily_goal_day"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -44,4 +48,19 @@ object Settings {
 
     fun lastUpdateCheck(context: Context): Long = prefs(context).getLong(KEY_LAST_CHECK, 0L)
     fun setLastUpdateCheck(context: Context, v: Long) = prefs(context).edit { putLong(KEY_LAST_CHECK, v) }
+
+    /** 語言標籤；空字串代表跟隨系統 */
+    fun languageTag(context: Context): String = prefs(context).getString(KEY_LANGUAGE, "") ?: ""
+    fun setLanguageTag(context: Context, v: String) = prefs(context).edit { putString(KEY_LANGUAGE, v) }
+
+    fun imperial(context: Context): Boolean = prefs(context).getBoolean(KEY_IMPERIAL, false)
+    fun setImperial(context: Context, v: Boolean) = prefs(context).edit { putBoolean(KEY_IMPERIAL, v) }
+
+    /** 每日目標（公尺）；0 表示不設目標 */
+    fun dailyGoal(context: Context): Int = prefs(context).getInt(KEY_DAILY_GOAL, 0)
+    fun setDailyGoal(context: Context, v: Int) = prefs(context).edit { putInt(KEY_DAILY_GOAL, v) }
+
+    /** 記住哪一天已經通知過達標，避免同一天重複提示 */
+    fun goalNotifiedDay(context: Context): String = prefs(context).getString(KEY_GOAL_DAY, "") ?: ""
+    fun setGoalNotifiedDay(context: Context, v: String) = prefs(context).edit { putString(KEY_GOAL_DAY, v) }
 }

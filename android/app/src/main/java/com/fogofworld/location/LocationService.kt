@@ -23,10 +23,11 @@ import androidx.core.content.ContextCompat
 import com.fogofworld.MainActivity
 import com.fogofworld.R
 import com.fogofworld.data.Fix
+import com.fogofworld.data.Format
+import com.fogofworld.data.LocaleHelper
 import com.fogofworld.data.FogStore
 import com.fogofworld.data.Ranks
 import com.fogofworld.data.Settings
-import kotlin.math.roundToInt
 
 /**
  * 前景服務：螢幕關掉、App 切到背景時仍然持續記錄足跡。
@@ -61,6 +62,11 @@ class LocationService : Service(), LocationListener {
     private var lastNotified = 0L
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /** 通知文字也要跟著 App 內的語言設定 */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -161,12 +167,44 @@ class LocationService : Service(), LocationListener {
             )
         )
 
+        checkDailyGoal()
+
         val now = System.currentTimeMillis()
         if (now - lastNotified > 10_000) {
             lastNotified = now
             notify(buildNotification())
         }
         if (now % 30_000 < 3_000) FogStore.flush()
+    }
+
+    /** 走到當日目標時提醒一次，同一天不重複 */
+    private fun checkDailyGoal() {
+        val goal = Settings.dailyGoal(this)
+        if (goal <= 0) return
+        val today = FogStore.todayKey()
+        if (Settings.goalNotifiedDay(this) == today) return
+        if (FogStore.todayDistance() < goal) return
+        Settings.setGoalNotifiedDay(this, today)
+        notifyGoalReached()
+    }
+
+    private fun notifyGoalReached() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) return
+        val n = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_fog_notification)
+            .setContentTitle(getString(R.string.goal_reached))
+            .setContentText(
+                getString(R.string.goal_reached_sub, Format.distance(this, FogStore.todayDistance()))
+            )
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+        runCatching {
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(1002, n)
+        }
     }
 
     @Deprecated("Deprecated in Java")
@@ -206,17 +244,26 @@ class LocationService : Service(), LocationListener {
             Intent(this, LocationService::class.java).setAction(ACTION_STOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val km = stats.distanceM / 1000.0
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_fog_notification)
-            .setContentTitle(getString(R.string.notif_title, rank.rank.name))
-            .setContentText(
+        val goal = Settings.dailyGoal(this)
+        val today = FogStore.todayDistance()
+        val text = buildString {
+            append(
                 getString(
                     R.string.notif_text,
-                    String.format("%.2f", km),
-                    String.format("%.2f", stats.areaKm2),
+                    Format.distance(this@LocationService, stats.distanceM),
+                    Format.area(this@LocationService, stats.areaKm2),
                 )
             )
+            if (goal > 0) {
+                val pct = ((today / goal) * 100).toInt().coerceIn(0, 999)
+                append(" · ")
+                append(getString(R.string.notif_goal, pct))
+            }
+        }
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_fog_notification)
+            .setContentTitle(getString(R.string.notif_title, getString(rank.rank.nameRes)))
+            .setContentText(text)
             .setContentIntent(open)
             .addAction(0, getString(R.string.notif_stop), stopIntent)
             .setOngoing(true)
@@ -237,7 +284,3 @@ class LocationService : Service(), LocationListener {
         }
     }
 }
-
-/** 公尺轉成人看得懂的字串 */
-fun formatDistance(m: Double): String =
-    if (m < 1000) "${m.roundToInt()} 公尺" else String.format("%.2f 公里", m / 1000)

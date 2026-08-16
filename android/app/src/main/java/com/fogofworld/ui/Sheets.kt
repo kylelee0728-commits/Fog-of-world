@@ -1,10 +1,10 @@
 package com.fogofworld.ui
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -36,12 +37,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.fogofworld.R
 import com.fogofworld.data.Achievements
+import com.fogofworld.data.AppLanguage
 import com.fogofworld.data.FogStore
+import com.fogofworld.data.Format
 import com.fogofworld.data.Grid
 import com.fogofworld.data.Landmark
 import com.fogofworld.data.Landmarks
@@ -51,12 +56,8 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private fun formatDate(ts: Long): String =
-    SimpleDateFormat("yyyy/MM/dd", Locale.US).format(Date(ts))
-
-private fun formatDistance(m: Double): String =
-    if (m < 1000) "${m.roundToInt()} 公尺"
-    else String.format(Locale.US, if (m < 10_000) "%.2f 公里" else "%.1f 公里", m / 1000)
+internal fun formatDate(ts: Long): String =
+    SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Date(ts))
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +84,11 @@ internal fun SheetScaffold(title: String, subtitle: String, onDismiss: () -> Uni
 @Composable
 fun AchievementSheet(stats: Stats, onDismiss: () -> Unit) {
     val unlocked = FogStore.unlockedAchievementIds()
-    SheetScaffold("🏅 成就", "${unlocked.size} / ${Achievements.COUNT} 已解鎖", onDismiss) {
+    SheetScaffold(
+        stringResource(R.string.sheet_achievements),
+        stringResource(R.string.sheet_achievements_sub, unlocked.size, Achievements.COUNT),
+        onDismiss,
+    ) {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.height(520.dp),
@@ -94,23 +99,23 @@ fun AchievementSheet(stats: Stats, onDismiss: () -> Unit) {
                 Surface(
                     color = if (at != null) FogAccent.copy(alpha = 0.07f) else Color.White.copy(alpha = 0.035f),
                     shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(
-                        1.dp,
-                        if (at != null) FogAccent.copy(alpha = 0.4f) else FogLine,
-                    ),
+                    border = BorderStroke(1.dp, if (at != null) FogAccent.copy(alpha = 0.4f) else FogLine),
                 ) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
                         Text(if (at != null) a.icon else "🔒", fontSize = 22.sp)
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
-                                a.name, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                                stringResource(a.nameRes), fontSize = 13.sp, fontWeight = FontWeight.Bold,
                                 color = if (at != null) FogText else FogText.copy(alpha = 0.55f),
                             )
-                            Text(a.desc, fontSize = 11.sp, color = FogMuted)
+                            Text(stringResource(a.descRes), fontSize = 11.sp, color = FogMuted)
                             Spacer(Modifier.height(5.dp))
                             if (at != null) {
-                                Text("${formatDate(at)} 解鎖", fontSize = 10.sp, color = FogAccent)
+                                Text(
+                                    stringResource(R.string.unlocked_on, formatDate(at)),
+                                    fontSize = 10.sp, color = FogAccent,
+                                )
                             } else {
                                 LinearProgressIndicator(
                                     progress = { progress },
@@ -138,7 +143,11 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
     val here = FogStore.lastFix
     val continents = visited.keys.mapNotNull { id -> all.firstOrNull { it.id == id }?.continent }.toSet()
 
-    SheetScaffold("🛂 世界護照", "${visited.size} / ${all.size} 個地標 · ${continents.size} 個大洲", onDismiss) {
+    SheetScaffold(
+        stringResource(R.string.sheet_passport),
+        stringResource(R.string.sheet_passport_sub, visited.size, all.size, continents.size),
+        onDismiss,
+    ) {
         // 最近的未造訪地標：距離與方位都先算好，避免在 lambda 裡再處理可空的定位
         val nearest: Triple<Landmark, Double, String>? = here?.let { fix ->
             all.filter { it.id !in visited.keys }
@@ -147,7 +156,7 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
                     Triple(
                         lm,
                         Grid.distanceM(fix.lat, fix.lng, lm.lat, lm.lng),
-                        Grid.compass(Grid.bearing(fix.lat, fix.lng, lm.lat, lm.lng)),
+                        Format.compass(context, Grid.bearing(fix.lat, fix.lng, lm.lat, lm.lng)),
                     )
                 }
         }
@@ -166,11 +175,11 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
                     ) {
                         Column(Modifier.padding(12.dp)) {
                             Text(
-                                "${lm.icon} 最近的目標：${lm.zh}",
+                                stringResource(R.string.nearest_title, lm.icon, Format.landmarkName(context, lm)),
                                 fontSize = 14.sp, fontWeight = FontWeight.Bold, color = FogText,
                             )
                             Text(
-                                "往${dir}方 ${formatDistance(dist)} · 走進 1 公里內即可蓋章",
+                                stringResource(R.string.nearest_sub, dir, Format.distance(context, dist)),
                                 fontSize = 12.sp, color = FogMuted,
                             )
                         }
@@ -187,7 +196,10 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
                         Modifier.padding(top = 10.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.Bottom,
                     ) {
-                        Text(continent, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = FogText)
+                        Text(
+                            Format.continent(context, continent),
+                            fontSize = 14.sp, fontWeight = FontWeight.Bold, color = FogText,
+                        )
                         Spacer(Modifier.width(8.dp))
                         Text(
                             "${list.count { it.id in visited.keys }} / ${list.size}",
@@ -202,10 +214,7 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
                         modifier = Modifier.fillMaxWidth().clickable { onPick(lm) },
                         color = if (at != null) FogAccent.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.03f),
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(
-                            1.dp,
-                            if (at != null) FogAccent.copy(alpha = 0.35f) else FogLine,
-                        ),
+                        border = BorderStroke(1.dp, if (at != null) FogAccent.copy(alpha = 0.35f) else FogLine),
                     ) {
                         Row(
                             Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
@@ -214,11 +223,18 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
                             Text(if (at != null) lm.icon else "🔒", fontSize = 18.sp)
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(lm.zh, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = FogText)
-                                Text("${lm.country} · ${lm.en}", fontSize = 11.sp, color = FogMuted)
+                                Text(
+                                    Format.landmarkName(context, lm),
+                                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = FogText,
+                                )
+                                Text(
+                                    "${lm.country} · ${Format.landmarkSecondary(context, lm)}",
+                                    fontSize = 11.sp, color = FogMuted,
+                                )
                             }
                             Text(
-                                if (at != null) formatDate(at) else dist?.let { formatDistance(it) } ?: "",
+                                if (at != null) formatDate(at)
+                                else dist?.let { Format.distance(context, it) } ?: "",
                                 fontSize = 11.sp, color = FogMuted,
                             )
                         }
@@ -239,6 +255,9 @@ fun SettingsSheet(
     interval: Int,
     follow: Boolean,
     autoUpdate: Boolean,
+    imperial: Boolean,
+    dailyGoalM: Int,
+    language: AppLanguage,
     hasBackground: Boolean,
     appVersion: String,
     onRadius: (Int) -> Unit,
@@ -247,6 +266,9 @@ fun SettingsSheet(
     onInterval: (Int) -> Unit,
     onFollow: (Boolean) -> Unit,
     onAutoUpdate: (Boolean) -> Unit,
+    onImperial: (Boolean) -> Unit,
+    onDailyGoal: (Int) -> Unit,
+    onLanguage: (AppLanguage) -> Unit,
     onRequestBackground: () -> Unit,
     onCheckUpdate: () -> Unit,
     onExport: () -> Unit,
@@ -254,112 +276,180 @@ fun SettingsSheet(
     onReset: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val context = LocalContext.current
     var confirmReset by remember { mutableStateOf(false) }
+    var pickLanguage by remember { mutableStateOf(false) }
 
-    SheetScaffold("⚙️ 設定", "版本 $appVersion", onDismiss) {
-        Column(Modifier.height(520.dp)) {
-            SliderRow("點亮半徑", "走過的地方會照亮多大範圍", "$radius m", radius.toFloat(), 20f..200f, 18) {
-                onRadius(it.roundToInt())
-            }
-            SliderRow("夜色濃度", "還沒走過的地方有多暗", "$opacity%", opacity.toFloat(), 30f..100f, 14) {
-                onOpacity(it.roundToInt())
-            }
-            SliderRow("GPS 精度門檻", "誤差大於此值的定位會被忽略", "$accuracy m", accuracy.toFloat(), 10f..200f, 19) {
-                onAccuracy(it.roundToInt())
-            }
-            SliderRow("定位間隔", "拉長比較省電", "$interval 秒", interval.toFloat(), 1f..30f, 29) {
-                onInterval(it.roundToInt())
-            }
+    SheetScaffold(
+        stringResource(R.string.sheet_settings),
+        stringResource(R.string.version_label, appVersion),
+        onDismiss,
+    ) {
+        Column(
+            Modifier
+                .height(520.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            // 語言與單位
+            ValueRow(
+                stringResource(R.string.set_language),
+                if (language == AppLanguage.SYSTEM) stringResource(R.string.lang_system) else language.label,
+            ) { pickLanguage = true }
 
-            SwitchRow("畫面跟隨我", "移動時地圖自動置中", follow, onFollow)
-            SwitchRow("自動檢查更新", "開啟 App 時看看有沒有新版本", autoUpdate, onAutoUpdate)
-
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                SmallAction("⬇️ 檢查更新", Modifier.weight(1f), onCheckUpdate)
-            }
-
-            Spacer(Modifier.height(6.dp))
-            Text("備份", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText)
-            Text(
-                "匯出的檔案與網頁版通用，可以互相匯入。重裝 App 前記得先匯出。",
-                fontSize = 11.sp, color = FogMuted,
+            SwitchRow(
+                stringResource(R.string.set_units),
+                if (imperial) stringResource(R.string.units_imperial) else stringResource(R.string.units_metric),
+                imperial,
+                onImperial,
             )
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SmallAction("📤 匯出存檔", Modifier.weight(1f), onExport)
-                SmallAction("📥 匯入存檔", Modifier.weight(1f), onImport)
-            }
 
+            // 每日目標：0 表示關閉
+            SliderRow(
+                stringResource(R.string.set_goal),
+                stringResource(R.string.set_goal_sub),
+                if (dailyGoalM == 0) stringResource(R.string.goal_off)
+                else Format.distance(context, dailyGoalM.toDouble()),
+                (dailyGoalM / 500).toFloat(),
+                0f..40f,
+                39,
+            ) { onDailyGoal((it.roundToInt()) * 500) }
+
+            SliderRow(
+                stringResource(R.string.set_radius), stringResource(R.string.set_radius_sub),
+                "$radius m", radius.toFloat(), 20f..200f, 17,
+            ) { onRadius(it.roundToInt()) }
+
+            SliderRow(
+                stringResource(R.string.set_opacity), stringResource(R.string.set_opacity_sub),
+                "$opacity%", opacity.toFloat(), 30f..100f, 13,
+            ) { onOpacity(it.roundToInt()) }
+
+            SliderRow(
+                stringResource(R.string.set_accuracy), stringResource(R.string.set_accuracy_sub),
+                "$accuracy m", accuracy.toFloat(), 10f..200f, 18,
+            ) { onAccuracy(it.roundToInt()) }
+
+            SliderRow(
+                stringResource(R.string.set_interval), stringResource(R.string.set_interval_sub),
+                "$interval s", interval.toFloat(), 1f..30f, 28,
+            ) { onInterval(it.roundToInt()) }
+
+            SwitchRow(
+                stringResource(R.string.set_follow), stringResource(R.string.set_follow_sub), follow, onFollow,
+            )
+            SwitchRow(
+                stringResource(R.string.set_autoupdate), stringResource(R.string.set_autoupdate_sub),
+                autoUpdate, onAutoUpdate,
+            )
+
+            SmallAction(stringResource(R.string.action_check_update), Modifier.fillMaxWidth(), onCheckUpdate)
+
+            Spacer(Modifier.height(12.dp))
             Surface(
-                color = if (hasBackground) FogTeal.copy(alpha = 0.08f) else FogAccent.copy(alpha = 0.08f),
+                color = (if (hasBackground) FogTeal else FogAccent).copy(alpha = 0.08f),
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(
-                    1.dp,
-                    (if (hasBackground) FogTeal else FogAccent).copy(alpha = 0.35f),
-                ),
+                border = BorderStroke(1.dp, (if (hasBackground) FogTeal else FogAccent).copy(alpha = 0.35f)),
             ) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(
-                            if (hasBackground) "背景記錄：已開啟" else "背景記錄：未開啟",
+                            stringResource(if (hasBackground) R.string.bg_on else R.string.bg_off),
                             fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText,
                         )
                         Text(
-                            if (hasBackground) "螢幕關掉、切到別的 App 都會繼續記錄"
-                            else "要整趟都記錄，定位權限需選「一律允許」",
+                            stringResource(if (hasBackground) R.string.bg_on_sub else R.string.bg_off_sub),
                             fontSize = 11.sp, color = FogMuted,
                         )
                     }
                     if (!hasBackground) {
                         TextButton(onClick = onRequestBackground) {
-                            Text("去允許", color = FogAccent, fontSize = 12.sp)
+                            Text(stringResource(R.string.bg_hint_action), color = FogAccent, fontSize = 12.sp)
                         }
                     }
                 }
             }
 
             Spacer(Modifier.height(16.dp))
+            Text(stringResource(R.string.backup_title), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText)
+            Text(stringResource(R.string.backup_sub), fontSize = 11.sp, color = FogMuted)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SmallAction(stringResource(R.string.action_export), Modifier.weight(1f), onExport)
+                SmallAction(stringResource(R.string.action_import), Modifier.weight(1f), onImport)
+            }
+
+            Spacer(Modifier.height(16.dp))
             TextButton(onClick = { confirmReset = true }) {
-                Text("🗑️ 清除所有紀錄", color = FogDanger, fontSize = 13.sp)
+                Text(stringResource(R.string.action_reset), color = FogDanger, fontSize = 13.sp)
             }
             Spacer(Modifier.height(8.dp))
-            Text(
-                "所有位置資料只存在這台手機上，沒有後端也不會上傳。\n地圖圖磚來源 © OpenStreetMap 貢獻者。",
-                fontSize = 11.sp, color = FogMuted, lineHeight = 18.sp,
-            )
+            Text(stringResource(R.string.privacy_note), fontSize = 11.sp, color = FogMuted, lineHeight = 18.sp)
+            Spacer(Modifier.height(24.dp))
         }
+    }
+
+    if (pickLanguage) {
+        AlertDialog(
+            onDismissRequest = { pickLanguage = false },
+            containerColor = FogPanel,
+            title = { Text(stringResource(R.string.set_language), color = FogText) },
+            text = {
+                Column {
+                    AppLanguage.entries.forEach { lang ->
+                        val label = if (lang == AppLanguage.SYSTEM) stringResource(R.string.lang_system) else lang.label
+                        Text(
+                            (if (lang == language) "● " else "○ ") + label,
+                            color = if (lang == language) FogAccent else FogText,
+                            fontSize = 15.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { pickLanguage = false; onLanguage(lang) }
+                                .padding(vertical = 12.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { pickLanguage = false }) {
+                    Text(stringResource(R.string.cancel), color = FogMuted)
+                }
+            },
+        )
     }
 
     if (confirmReset) {
         AlertDialog(
             onDismissRequest = { confirmReset = false },
             containerColor = FogPanel,
-            title = { Text("清除所有紀錄？", color = FogText) },
-            text = {
-                Text("點亮過的地方會重新暗下來，成就與護照也會歸零，這個動作無法復原。", color = FogMuted)
-            },
+            title = { Text(stringResource(R.string.reset_title), color = FogText) },
+            text = { Text(stringResource(R.string.reset_text), color = FogMuted) },
             confirmButton = {
                 TextButton(onClick = { confirmReset = false; onReset() }) {
-                    Text("確定清除", color = FogDanger)
+                    Text(stringResource(R.string.action_confirm_erase), color = FogDanger)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmReset = false }) { Text("取消", color = FogMuted) }
+                TextButton(onClick = { confirmReset = false }) {
+                    Text(stringResource(R.string.cancel), color = FogMuted)
+                }
             },
         )
     }
 }
 
 @Composable
-private fun SwitchRow(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onChange: (Boolean) -> Unit,
-) {
+private fun ValueRow(title: String, value: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText, modifier = Modifier.weight(1f))
+        Text(value, fontSize = 13.sp, color = FogAccent)
+    }
+}
+
+@Composable
+private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -375,7 +465,7 @@ private fun SwitchRow(
     }
 }
 
-/** 小按鈕：不用 Button，避免預設內距把中文字擠掉 */
+/** 小按鈕：不用 Button，避免預設內距把文字擠掉 */
 @Composable
 private fun SmallAction(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
@@ -385,11 +475,7 @@ private fun SmallAction(label: String, modifier: Modifier = Modifier, onClick: (
         border = BorderStroke(1.dp, FogLine),
     ) {
         Text(
-            label,
-            color = FogText,
-            fontSize = 13.sp,
-            maxLines = 1,
-            textAlign = TextAlign.Center,
+            label, color = FogText, fontSize = 13.sp, maxLines = 1, textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().padding(vertical = 11.dp, horizontal = 6.dp),
         )
     }
@@ -418,15 +504,7 @@ private fun SliderRow(
             onValueChange = onChange,
             valueRange = range,
             steps = steps,
-            colors = androidx.compose.material3.SliderDefaults.colors(
-                thumbColor = FogAccent,
-                activeTrackColor = FogAccent,
-            ),
+            colors = SliderDefaults.colors(thumbColor = FogAccent, activeTrackColor = FogAccent),
         )
     }
-}
-
-@Composable
-fun EmptyBox() {
-    Box(Modifier.background(Color.Transparent))
 }

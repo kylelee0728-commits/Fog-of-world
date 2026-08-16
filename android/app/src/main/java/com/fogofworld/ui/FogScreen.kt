@@ -49,7 +49,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.fogofworld.R
+import com.fogofworld.data.AppLanguage
 import com.fogofworld.data.FogStore
+import com.fogofworld.data.Format
 import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Ranks
 import com.fogofworld.data.Settings
@@ -70,6 +74,7 @@ fun FogScreen(
     hasBackgroundPermission: Boolean,
     appVersion: String,
     updateState: UpdateState,
+    onLanguage: (AppLanguage) -> Unit,
     onToggleWalk: () -> Unit,
     onRequestBackground: () -> Unit,
     onCheckUpdate: () -> Unit,
@@ -93,6 +98,9 @@ fun FogScreen(
     var accuracy by remember { mutableStateOf(Settings.accuracyLimit(context)) }
     var interval by remember { mutableStateOf(Settings.intervalSec(context)) }
     var autoUpdate by remember { mutableStateOf(Settings.autoUpdate(context)) }
+    var imperial by remember { mutableStateOf(Settings.imperial(context)) }
+    var dailyGoal by remember { mutableStateOf(Settings.dailyGoal(context)) }
+    val language = AppLanguage.fromTag(Settings.languageTag(context))
 
     // 事件：撥霧重畫、跟隨鏡頭、成就與蓋章提示
     LaunchedEffect(Unit) {
@@ -109,13 +117,20 @@ fun FogScreen(
 
                 is FogStore.Event.Unlocked -> {
                     event.achievements.take(2).forEach {
-                        toasts.add(Toast(System.nanoTime(), it.icon, "成就解鎖：${it.name}", it.desc))
+                        toasts.add(
+                            Toast(
+                                System.nanoTime(), it.icon,
+                                context.getString(R.string.toast_achievement, context.getString(it.nameRes)),
+                                context.getString(it.descRes),
+                            )
+                        )
                     }
                     if (event.achievements.size > 2) {
                         toasts.add(
                             Toast(
                                 System.nanoTime(), "🏅",
-                                "另外還解鎖了 ${event.achievements.size - 2} 個成就", "到「成就」看看拿了哪些",
+                                context.getString(R.string.toast_achievement_more, event.achievements.size - 2),
+                                context.getString(R.string.toast_achievement_more_sub),
                             )
                         )
                     }
@@ -124,7 +139,11 @@ fun FogScreen(
                 is FogStore.Event.Stamped -> {
                     event.landmarks.take(2).forEach {
                         toasts.add(
-                            Toast(System.nanoTime(), it.icon, "護照蓋章：${it.zh}", "${it.country} · ${it.continent}")
+                            Toast(
+                                System.nanoTime(), it.icon,
+                                context.getString(R.string.toast_stamp, Format.landmarkName(context, it)),
+                                "${it.country} · ${Format.continent(context, it.continent)}",
+                            )
                         )
                     }
                 }
@@ -210,7 +229,7 @@ fun FogScreen(
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Lv.${rank.level} ${rank.rank.name}",
+                        "Lv.${rank.level} " + stringResource(rank.rank.nameRes),
                         color = FogText, fontSize = 15.sp, fontWeight = FontWeight.Bold,
                     )
                     Spacer(Modifier.height(5.dp))
@@ -228,14 +247,17 @@ fun FogScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.clickable { sheet = Sheet.STATS },
             ) {
-                StatChip(Modifier.weight(1f), String.format("%.2f", stats.distanceM / 1000), "公里")
                 StatChip(
                     Modifier.weight(1f),
-                    if (stats.areaKm2 < 10) String.format("%.2f", stats.areaKm2)
-                    else String.format("%.1f", stats.areaKm2),
-                    "km² 已點亮",
+                    Format.distanceValue(context, stats.distanceM),
+                    Format.distanceUnit(context) + " " + stringResource(R.string.chip_distance),
                 )
-                StatChip(Modifier.weight(1f), "${stats.landmarks}", "地標")
+                StatChip(
+                    Modifier.weight(1f),
+                    Format.areaValue(context, stats.areaKm2),
+                    Format.areaUnit(context) + " " + stringResource(R.string.chip_area),
+                )
+                StatChip(Modifier.weight(1f), "${stats.landmarks}", stringResource(R.string.chip_landmarks))
             }
             if (walking && !hasBackgroundPermission) {
                 Spacer(Modifier.height(8.dp))
@@ -292,8 +314,8 @@ fun FogScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                DockButton(Modifier.weight(1f), "🏅", "成就") { sheet = Sheet.ACHIEVEMENTS }
-                DockButton(Modifier.weight(1f), "🛂", "護照") { sheet = Sheet.PASSPORT }
+                DockButton(Modifier.weight(1f), "🏅", stringResource(R.string.dock_achievements)) { sheet = Sheet.ACHIEVEMENTS }
+                DockButton(Modifier.weight(1f), "🛂", stringResource(R.string.dock_passport)) { sheet = Sheet.PASSPORT }
                 Button(
                     onClick = onToggleWalk,
                     modifier = Modifier.weight(1.6f).height(58.dp),
@@ -308,7 +330,7 @@ fun FogScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(if (walking) "⏸️" else "🚶", fontSize = 17.sp)
                         Text(
-                            if (walking) "暫停探索" else "開始探索",
+                            stringResource(if (walking) R.string.dock_pause else R.string.dock_start),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
@@ -316,13 +338,13 @@ fun FogScreen(
                         )
                     }
                 }
-                DockButton(Modifier.weight(1f), "🎯", "定位") {
+                DockButton(Modifier.weight(1f), "🎯", stringResource(R.string.dock_locate)) {
                     FogStore.lastFix?.let {
                         mapView?.controller?.animateTo(GeoPoint(it.lat, it.lng))
                         mapView?.controller?.setZoom(16.0)
                     }
                 }
-                DockButton(Modifier.weight(1f), "⚙️", "設定") { sheet = Sheet.SETTINGS }
+                DockButton(Modifier.weight(1f), "⚙️", stringResource(R.string.dock_settings)) { sheet = Sheet.SETTINGS }
             }
         }
 
@@ -345,6 +367,9 @@ fun FogScreen(
                 interval = interval,
                 follow = follow,
                 autoUpdate = autoUpdate,
+                imperial = imperial,
+                dailyGoalM = dailyGoal,
+                language = language,
                 hasBackground = hasBackgroundPermission,
                 appVersion = appVersion,
                 onRadius = {
@@ -362,6 +387,9 @@ fun FogScreen(
                 onInterval = { interval = it; Settings.setIntervalSec(context, it) },
                 onFollow = { follow = it; Settings.setFollow(context, it) },
                 onAutoUpdate = { autoUpdate = it; Settings.setAutoUpdate(context, it) },
+                onImperial = { imperial = it; Settings.setImperial(context, it) },
+                onDailyGoal = { dailyGoal = it; Settings.setDailyGoal(context, it) },
+                onLanguage = onLanguage,
                 onRequestBackground = onRequestBackground,
                 onCheckUpdate = { sheet = Sheet.NONE; onCheckUpdate() },
                 onExport = { sheet = Sheet.NONE; onExport() },
@@ -377,6 +405,8 @@ fun FogScreen(
                 stats = stats,
                 daily = FogStore.dailyDistances(),
                 landmarkTotal = Landmarks.all(context).size,
+                dailyGoalM = dailyGoal,
+                todayM = FogStore.todayDistance(),
                 onDismiss = { sheet = Sheet.NONE },
             )
 
@@ -457,10 +487,12 @@ private fun BackgroundHint(onRequest: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text("螢幕關掉後就不會記錄", color = FogText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                Text("允許「一律允許」定位才能整趟記錄", color = FogMuted, fontSize = 11.sp)
+                Text(stringResource(R.string.bg_hint_title), color = FogText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.bg_hint_sub), color = FogMuted, fontSize = 11.sp)
             }
-            TextButton(onClick = onRequest) { Text("去允許", color = FogTeal, fontSize = 12.sp) }
+            TextButton(onClick = onRequest) {
+                Text(stringResource(R.string.bg_hint_action), color = FogTeal, fontSize = 12.sp)
+            }
         }
     }
 }
@@ -481,18 +513,15 @@ private fun IntroOverlay(onStart: () -> Unit) {
         ) {
             Text("🕯️", fontSize = 58.sp)
             Spacer(Modifier.height(8.dp))
-            Text("拾光者", color = FogText, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.app_name), color = FogText, fontSize = 30.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(18.dp))
             Text(
-                "那一年，光開始遺失。\n" +
-                    "不是入夜——夜會過去。是光忘了怎麼留在地上。\n" +
-                    "城市一盞一盞暗去，道路失去輪廓，地圖變回空白的紙。\n\n" +
-                    "後來人們發現：只有親自走過的地方，光會回來。",
+                stringResource(R.string.intro_lore),
                 color = FogMuted, fontSize = 13.sp, textAlign = TextAlign.Center, lineHeight = 24.sp,
             )
             Spacer(Modifier.height(14.dp))
             Text(
-                "光不會自己亮起來，要用腳步把它撿回來。",
+                stringResource(R.string.intro_tagline),
                 color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(28.dp))
@@ -503,10 +532,10 @@ private fun IntroOverlay(onStart: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(
                     containerColor = FogAccent, contentColor = Color(0xFF10161F)
                 ),
-            ) { Text("開始拾光", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
+            ) { Text(stringResource(R.string.intro_start), fontSize = 16.sp, fontWeight = FontWeight.Bold) }
             Spacer(Modifier.height(14.dp))
             Text(
-                "需要定位權限。資料只留在這台手機上，不會上傳。",
+                stringResource(R.string.intro_privacy),
                 color = FogMuted, fontSize = 11.sp, textAlign = TextAlign.Center,
             )
         }

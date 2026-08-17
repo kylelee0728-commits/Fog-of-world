@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -54,11 +56,12 @@ android {
 
         // Google Maps 金鑰不進版控：本機放 local.properties，CI 走 GitHub Secret。
         // 沒有金鑰時 MAPS_API_KEY 是空字串，App 會自動退回 OpenStreetMap。
-        val mapsKey: String = System.getenv("MAPS_API_KEY")
+        val mapsKey: String = System.getenv("MAPS_API_KEY")?.takeIf { it.isNotBlank() }
             ?: runCatching {
-                java.util.Properties().apply {
-                    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
-                }.getProperty("MAPS_API_KEY")
+                val props = Properties()
+                val f = rootProject.file("local.properties")
+                if (f.exists()) f.inputStream().use { props.load(it) }
+                props.getProperty("MAPS_API_KEY")
             }.getOrNull()
             ?: ""
         manifestPlaceholders["MAPS_API_KEY"] = mapsKey

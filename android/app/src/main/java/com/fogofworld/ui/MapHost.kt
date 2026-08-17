@@ -221,7 +221,10 @@ private fun OsmMapHost(
                     map.controller.animateTo(GeoPoint(lat, lng))
                 }
 
-                override fun setZoom(zoom: Double) = map.controller.setZoom(zoom)
+                // osmdroid 的 setZoom 會回傳 double，這裡要吞掉回傳值
+                override fun setZoom(zoom: Double) {
+                    map.controller.setZoom(zoom)
+                }
 
                 override fun invalidateFog() = fog.invalidate()
 

@@ -204,4 +204,22 @@
     <string name="ach_cells_1000_desc">点亮 1000 个光格</string>
     <string name="ach_cells_10000_name">长夜终结者</string>
     <string name="ach_cells_10000_desc">点亮 10000 个光格</string>
+    <string name="set_map_source">地图来源</string>
+    <string name="map_source_osm">OpenStreetMap（公用）</string>
+    <string name="map_source_custom">自定义瓦片网址</string>
+    <string name="map_url_title">自定义地图来源</string>
+    <string name="map_url_hint">https://example.com/{z}/{x}/{y}.png</string>
+    <string name="map_url_note">填入允许缓存的瓦片服务网址（含 {z}/{x}/{y}）。留空则使用 OpenStreetMap。
+自定义来源才能预先下载，因为 OSM 公用服务器的使用政策禁止预载与批量下载。</string>
+    <string name="save">保存</string>
+    <string name="offline_title">离线地图</string>
+    <string name="offline_sub">先把当前画面这一区存起来，走的时候就不用等</string>
+    <string name="offline_download">⬇️ 下载当前这一区</string>
+    <string name="offline_blocked">OpenStreetMap 公用服务器不允许预先下载。要用这个功能，请先在上面设置自定义瓦片来源。</string>
+    <string name="offline_running">下载中 %1$d / %2$d</string>
+    <string name="offline_done">已存好 %1$d 张瓦片，这一区之后不用再等</string>
+    <string name="offline_failed">下载没有完成，可能是网络或来源限制。</string>
+    <string name="offline_too_many">这个范围要下载 %1$d 张瓦片，太多了。请先把地图放大一点再试。</string>
+    <string name="cache_cleared">地图缓存已清除</string>
+    <string name="action_clear_cache">🧹 清除地图缓存</string>
 </resources>

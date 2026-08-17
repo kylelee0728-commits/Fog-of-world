@@ -204,4 +204,22 @@
     <string name="ach_cells_1000_desc">1000マスを照らす</string>
     <string name="ach_cells_10000_name">長夜の終わり</string>
     <string name="ach_cells_10000_desc">10000マスを照らす</string>
+    <string name="set_map_source">地図ソース</string>
+    <string name="map_source_osm">OpenStreetMap（公式）</string>
+    <string name="map_source_custom">カスタムタイルURL</string>
+    <string name="map_url_title">カスタム地図ソース</string>
+    <string name="map_url_hint">https://example.com/{z}/{x}/{y}.png</string>
+    <string name="map_url_note">キャッシュ可能なタイルURL（{z}/{x}/{y} を含む）を入力。空欄なら OpenStreetMap。
+事前ダウンロードはカスタムソースのみ可能です（OSM 公式サーバーの利用規約で禁止のため）。</string>
+    <string name="save">保存</string>
+    <string name="offline_title">オフライン地図</string>
+    <string name="offline_sub">今の表示範囲を保存して、歩くときに待たない</string>
+    <string name="offline_download">⬇️ この範囲を保存</string>
+    <string name="offline_blocked">OpenStreetMap 公式サーバーは事前ダウンロードを許可していません。上でカスタムソースを設定してください。</string>
+    <string name="offline_running">ダウンロード中 %1$d / %2$d</string>
+    <string name="offline_done">%1$d 枚を保存しました。この範囲はすぐ表示されます。</string>
+    <string name="offline_failed">ダウンロードが完了しませんでした（通信または制限）。</string>
+    <string name="offline_too_many">この範囲は %1$d 枚必要で多すぎます。少し拡大してください。</string>
+    <string name="cache_cleared">地図キャッシュを削除しました</string>
+    <string name="action_clear_cache">🧹 地図キャッシュを削除</string>
 </resources>

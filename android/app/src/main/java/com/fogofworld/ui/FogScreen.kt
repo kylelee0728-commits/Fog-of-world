@@ -54,13 +54,14 @@ import com.fogofworld.R
 import com.fogofworld.data.AppLanguage
 import com.fogofworld.data.FogStore
 import com.fogofworld.data.Format
+import com.fogofworld.data.MapSource
+import com.fogofworld.data.TileCache
 import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Ranks
 import com.fogofworld.data.Settings
 import org.osmdroid.events.MapListener
 import org.osmdroid.events.ScrollEvent
 import org.osmdroid.events.ZoomEvent
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 
@@ -101,6 +102,8 @@ fun FogScreen(
     var imperial by remember { mutableStateOf(Settings.imperial(context)) }
     var dailyGoal by remember { mutableStateOf(Settings.dailyGoal(context)) }
     val language = AppLanguage.fromTag(Settings.languageTag(context))
+    var tileUrl by remember { mutableStateOf(Settings.tileUrl(context)) }
+    var offlineStatus by remember { mutableStateOf("") }
 
     // 事件：撥霧重畫、跟隨鏡頭、成就與蓋章提示
     LaunchedEffect(Unit) {
@@ -170,7 +173,7 @@ fun FogScreen(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 val map = MapView(ctx).apply {
-                    setTileSource(TileSourceFactory.MAPNIK)
+                    setTileSource(MapSource.current(ctx))
                     setMultiTouchControls(true)
                     zoomController.setVisibility(
                         org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER
@@ -370,6 +373,8 @@ fun FogScreen(
                 imperial = imperial,
                 dailyGoalM = dailyGoal,
                 language = language,
+                tileUrl = tileUrl,
+                offlineStatus = offlineStatus,
                 hasBackground = hasBackgroundPermission,
                 appVersion = appVersion,
                 onRadius = {
@@ -390,6 +395,40 @@ fun FogScreen(
                 onImperial = { imperial = it; Settings.setImperial(context, it) },
                 onDailyGoal = { dailyGoal = it; Settings.setDailyGoal(context, it) },
                 onLanguage = onLanguage,
+                onTileUrl = { url ->
+                    tileUrl = url
+                    Settings.setTileUrl(context, url)
+                    // 換來源要重設快取政策（預載開關）並讓地圖重新取圖
+                    TileCache.configure(context, java.io.File(context.filesDir, "osmdroid"))
+                    mapView?.setTileSource(MapSource.current(context))
+                    offlineStatus = ""
+                },
+                onDownloadArea = {
+                    val map = mapView
+                    if (map != null) {
+                        TileCache.downloadVisibleArea(context, map) { p ->
+                            offlineStatus = when (p) {
+                                is TileCache.Progress.Counting ->
+                                    context.getString(R.string.offline_running, 0, p.tiles)
+                                is TileCache.Progress.Running ->
+                                    context.getString(R.string.offline_running, p.done, p.total)
+                                is TileCache.Progress.Done ->
+                                    context.getString(R.string.offline_done, p.tiles)
+                                is TileCache.Progress.TooMany ->
+                                    context.getString(R.string.offline_too_many, p.tiles)
+                                is TileCache.Progress.NotAllowed ->
+                                    context.getString(R.string.offline_blocked)
+                                is TileCache.Progress.Failed ->
+                                    context.getString(R.string.offline_failed)
+                            }
+                        }
+                    }
+                },
+                onClearCache = {
+                    TileCache.clear(context)
+                    mapView?.invalidate()
+                    offlineStatus = context.getString(R.string.cache_cleared)
+                },
                 onRequestBackground = onRequestBackground,
                 onCheckUpdate = { sheet = Sheet.NONE; onCheckUpdate() },
                 onExport = { sheet = Sheet.NONE; onExport() },

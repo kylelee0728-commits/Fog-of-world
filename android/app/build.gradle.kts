@@ -16,7 +16,7 @@ val releaseKeystore: String? = System.getenv("FOW_KEYSTORE_FILE")?.takeIf { it.i
  * 所以這裡編成 YYMMPP：26.8 → 260800、26.8.1 → 260801、26.9 → 260900。
  * 每個月最多 99 個小版本，且跨年遞增（27.1 → 270100）。
  */
-val appVersionName = "26.8.6"
+val appVersionName = "26.8.7"
 
 val appVersionCode = run {
     val m = Regex("""^(\d{2})\.(\d{1,2})(?:\.(\d{1,2}))?$""").find(appVersionName)

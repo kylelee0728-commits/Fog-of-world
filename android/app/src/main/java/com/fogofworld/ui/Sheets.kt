@@ -21,6 +21,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -50,6 +52,7 @@ import com.fogofworld.data.Format
 import com.fogofworld.data.Grid
 import com.fogofworld.data.Landmark
 import com.fogofworld.data.Landmarks
+import com.fogofworld.data.MapSource
 import com.fogofworld.data.Stats
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -258,6 +261,8 @@ fun SettingsSheet(
     imperial: Boolean,
     dailyGoalM: Int,
     language: AppLanguage,
+    tileUrl: String,
+    offlineStatus: String,
     hasBackground: Boolean,
     appVersion: String,
     onRadius: (Int) -> Unit,
@@ -269,6 +274,9 @@ fun SettingsSheet(
     onImperial: (Boolean) -> Unit,
     onDailyGoal: (Int) -> Unit,
     onLanguage: (AppLanguage) -> Unit,
+    onTileUrl: (String) -> Unit,
+    onDownloadArea: () -> Unit,
+    onClearCache: () -> Unit,
     onRequestBackground: () -> Unit,
     onCheckUpdate: () -> Unit,
     onExport: () -> Unit,
@@ -279,6 +287,8 @@ fun SettingsSheet(
     val context = LocalContext.current
     var confirmReset by remember { mutableStateOf(false) }
     var pickLanguage by remember { mutableStateOf(false) }
+    var editUrl by remember { mutableStateOf(false) }
+    val prefetchAllowed = MapSource.allowsPrefetch(context)
 
     SheetScaffold(
         stringResource(R.string.sheet_settings),
@@ -370,6 +380,32 @@ fun SettingsSheet(
             }
 
             Spacer(Modifier.height(16.dp))
+            Text(stringResource(R.string.offline_title), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText)
+            Text(stringResource(R.string.offline_sub), fontSize = 11.sp, color = FogMuted)
+            Spacer(Modifier.height(8.dp))
+
+            ValueRow(
+                stringResource(R.string.set_map_source),
+                if (tileUrl.isBlank()) stringResource(R.string.map_source_osm)
+                else stringResource(R.string.map_source_custom),
+            ) { editUrl = true }
+
+            if (prefetchAllowed) {
+                SmallAction(stringResource(R.string.offline_download), Modifier.fillMaxWidth(), onDownloadArea)
+            } else {
+                Text(
+                    stringResource(R.string.offline_blocked),
+                    fontSize = 11.sp, color = FogMuted, lineHeight = 17.sp,
+                    modifier = Modifier.padding(vertical = 6.dp),
+                )
+            }
+            if (offlineStatus.isNotEmpty()) {
+                Text(offlineStatus, fontSize = 11.sp, color = FogAccent, modifier = Modifier.padding(top = 4.dp))
+            }
+            Spacer(Modifier.height(8.dp))
+            SmallAction(stringResource(R.string.action_clear_cache), Modifier.fillMaxWidth(), onClearCache)
+
+            Spacer(Modifier.height(16.dp))
             Text(stringResource(R.string.backup_title), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText)
             Text(stringResource(R.string.backup_sub), fontSize = 11.sp, color = FogMuted)
             Spacer(Modifier.height(8.dp))
@@ -411,6 +447,39 @@ fun SettingsSheet(
             },
             confirmButton = {
                 TextButton(onClick = { pickLanguage = false }) {
+                    Text(stringResource(R.string.cancel), color = FogMuted)
+                }
+            },
+        )
+    }
+
+    if (editUrl) {
+        var draft by remember { mutableStateOf(tileUrl) }
+        AlertDialog(
+            onDismissRequest = { editUrl = false },
+            containerColor = FogPanel,
+            title = { Text(stringResource(R.string.map_url_title), color = FogText) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = draft,
+                        onValueChange = { draft = it },
+                        singleLine = true,
+                        placeholder = { Text(stringResource(R.string.map_url_hint), color = FogMuted, fontSize = 12.sp) },
+                        textStyle = LocalTextStyle.current.copy(color = FogText, fontSize = 13.sp),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(stringResource(R.string.map_url_note), color = FogMuted, fontSize = 11.sp, lineHeight = 17.sp)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { editUrl = false; onTileUrl(draft.trim()) }) {
+                    Text(stringResource(R.string.save), color = FogAccent)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editUrl = false }) {
                     Text(stringResource(R.string.cancel), color = FogMuted)
                 }
             },

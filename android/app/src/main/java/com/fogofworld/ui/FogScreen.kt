@@ -1,6 +1,5 @@
 package com.fogofworld.ui
 
-import android.widget.FrameLayout
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -47,7 +46,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
 import com.fogofworld.R
@@ -59,11 +57,6 @@ import com.fogofworld.data.TileCache
 import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Ranks
 import com.fogofworld.data.Settings
-import org.osmdroid.events.MapListener
-import org.osmdroid.events.ScrollEvent
-import org.osmdroid.events.ZoomEvent
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
 
 private enum class Sheet { NONE, ACHIEVEMENTS, PASSPORT, SETTINGS, STATS }
 
@@ -91,8 +84,7 @@ fun FogScreen(
     var showIntro by remember { mutableStateOf(!Settings.seenIntro(context)) }
     val toasts = remember { mutableStateListOf<Toast>() }
 
-    var mapView by remember { mutableStateOf<MapView?>(null) }
-    var fogView by remember { mutableStateOf<FogView?>(null) }
+    var controller by remember { mutableStateOf<MapController?>(null) }
     var follow by remember { mutableStateOf(Settings.follow(context)) }
     var radius by remember { mutableStateOf(Settings.revealRadius(context)) }
     var opacity by remember { mutableStateOf(Settings.fogOpacity(context)) }
@@ -110,11 +102,9 @@ fun FogScreen(
         FogStore.events.collect { event ->
             when (event) {
                 is FogStore.Event.FogChanged -> {
-                    fogView?.invalidate()
+                    controller?.invalidateFog()
                     if (follow) {
-                        FogStore.lastFix?.let { fix ->
-                            mapView?.controller?.animateTo(GeoPoint(fix.lat, fix.lng))
-                        }
+                        FogStore.lastFix?.let { fix -> controller?.animateTo(fix.lat, fix.lng) }
                     }
                 }
 
@@ -169,41 +159,11 @@ fun FogScreen(
     Box(Modifier.fillMaxSize().background(FogBg)) {
 
         // ── 地圖 + 迷霧 ──────────────────────────────
-        AndroidView(
+        MapHost(
             modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-                val map = MapView(ctx).apply {
-                    setTileSource(MapSource.current(ctx))
-                    setMultiTouchControls(true)
-                    zoomController.setVisibility(
-                        org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER
-                    )
-                    val start = FogStore.lastFix
-                    controller.setZoom(if (start != null) 16.0 else 3.0)
-                    controller.setCenter(
-                        GeoPoint(start?.lat ?: 25.0339, start?.lng ?: 121.5645)
-                    )
-                }
-                val fog = FogView(ctx, map).apply {
-                    radiusM = Settings.revealRadius(ctx).toDouble()
-                    this.opacity = Settings.fogOpacity(ctx) / 100f
-                }
-                map.addMapListener(object : MapListener {
-                    override fun onScroll(event: ScrollEvent?): Boolean {
-                        fog.invalidate(); return false
-                    }
-
-                    override fun onZoom(event: ZoomEvent?): Boolean {
-                        fog.invalidate(); return false
-                    }
-                })
-                mapView = map
-                fogView = fog
-                FrameLayout(ctx).apply {
-                    addView(map, FrameLayout.LayoutParams(-1, -1))
-                    addView(fog, FrameLayout.LayoutParams(-1, -1))
-                }
-            },
+            radiusM = radius.toDouble(),
+            opacity = opacity / 100f,
+            onReady = { controller = it },
         )
 
         // ── 頂部狀態 ────────────────────────────────
@@ -343,8 +303,8 @@ fun FogScreen(
                 }
                 DockButton(Modifier.weight(1f), "🎯", stringResource(R.string.dock_locate)) {
                     FogStore.lastFix?.let {
-                        mapView?.controller?.animateTo(GeoPoint(it.lat, it.lng))
-                        mapView?.controller?.setZoom(16.0)
+                        controller?.animateTo(it.lat, it.lng)
+                        controller?.setZoom(16.0)
                     }
                 }
                 DockButton(Modifier.weight(1f), "⚙️", stringResource(R.string.dock_settings)) { sheet = Sheet.SETTINGS }
@@ -357,8 +317,8 @@ fun FogScreen(
             Sheet.PASSPORT -> PassportSheet(
                 onPick = { lm ->
                     sheet = Sheet.NONE
-                    mapView?.controller?.animateTo(GeoPoint(lm.lat, lm.lng))
-                    mapView?.controller?.setZoom(13.0)
+                    controller?.animateTo(lm.lat, lm.lng)
+                    controller?.setZoom(13.0)
                 },
                 onDismiss = { sheet = Sheet.NONE },
             )
@@ -381,12 +341,12 @@ fun FogScreen(
                     radius = it
                     Settings.setRevealRadius(context, it)
                     FogStore.revealRadius = it.toDouble()
-                    fogView?.radiusM = it.toDouble()
+                    controller?.invalidateFog()
                 },
                 onOpacity = {
                     opacity = it
                     Settings.setFogOpacity(context, it)
-                    fogView?.opacity = it / 100f
+                    controller?.invalidateFog()
                 },
                 onAccuracy = { accuracy = it; Settings.setAccuracyLimit(context, it) },
                 onInterval = { interval = it; Settings.setIntervalSec(context, it) },
@@ -400,11 +360,11 @@ fun FogScreen(
                     Settings.setTileUrl(context, url)
                     // 換來源要重設快取政策（預載開關）並讓地圖重新取圖
                     TileCache.configure(context, java.io.File(context.filesDir, "osmdroid"))
-                    mapView?.setTileSource(MapSource.current(context))
+                    controller?.osmMapView()?.setTileSource(MapSource.current(context))
                     offlineStatus = ""
                 },
                 onDownloadArea = {
-                    val map = mapView
+                    val map = controller?.osmMapView()
                     if (map != null) {
                         TileCache.downloadVisibleArea(context, map) { p ->
                             offlineStatus = when (p) {
@@ -426,7 +386,7 @@ fun FogScreen(
                 },
                 onClearCache = {
                     TileCache.clear(context)
-                    mapView?.invalidate()
+                    controller?.invalidateFog()
                     offlineStatus = context.getString(R.string.cache_cleared)
                 },
                 onRequestBackground = onRequestBackground,
@@ -435,7 +395,7 @@ fun FogScreen(
                 onImport = { sheet = Sheet.NONE; onImport() },
                 onReset = {
                     FogStore.reset()
-                    fogView?.invalidate()
+                    controller?.invalidateFog()
                 },
                 onDismiss = { sheet = Sheet.NONE },
             )

@@ -15,9 +15,6 @@ import android.view.View
 import com.fogofworld.data.Bucket
 import com.fogofworld.data.FogStore
 import com.fogofworld.data.Grid
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -29,8 +26,23 @@ import kotlin.math.roundToInt
  * 先鋪滿整層霧，再用 DST_OUT 把走過的地方挖掉 —— 與網頁版同一套作法，
  * 重疊處不會有接縫，邊緣是柔的。挖洞需要獨立圖層，所以用 saveLayer。
  */
+/**
+ * 迷霧層需要地圖提供的東西只有這些，因此不綁定任何一家地圖 SDK。
+ * osmdroid 與 Google Maps 各自實作一份即可。
+ */
+interface FogProjection {
+    fun toScreen(lat: Double, lng: Double, out: android.graphics.Point)
+    fun south(): Double
+    fun north(): Double
+    fun west(): Double
+    fun east(): Double
+    fun centerLat(): Double
+    /** 目前視角下 1 像素等於幾公尺 */
+    fun metersPerPixel(): Double
+}
+
 @SuppressLint("ViewConstructor")
-class FogView(context: Context, private val map: MapView) : View(context) {
+class FogView(context: Context, private val source: () -> FogProjection?) : View(context) {
 
     var radiusM: Double = 60.0
         set(value) {
@@ -85,7 +97,6 @@ class FogView(context: Context, private val map: MapView) : View(context) {
     private var brushRadius = -1
 
     private val reuse = android.graphics.Point()
-    private val probe = GeoPoint(0.0, 0.0)
 
     init {
         setWillNotDraw(false)
@@ -98,17 +109,8 @@ class FogView(context: Context, private val map: MapView) : View(context) {
         val h = height.toFloat()
         if (w <= 0 || h <= 0) return
 
-        val projection = map.projection
-        val box = projection.boundingBox
-        val centerLat = box.centerLatitude
-
-        // 1) 這個視角下 1 像素等於幾公尺（用投影實測，不假設圖磚大小）
-        probe.setCoords(centerLat, box.centerLongitude)
-        projection.toPixels(probe, reuse)
-        val x1 = reuse.x
-        probe.setCoords(centerLat, box.centerLongitude + 0.01)
-        projection.toPixels(probe, reuse)
-        val mpp = Grid.metersPerPixel(abs(reuse.x - x1).toDouble(), centerLat)
+        val projection = source() ?: return
+        val mpp = projection.metersPerPixel()
         val radiusPx = (radiusM / mpp).toFloat()
 
         // 2) 鋪滿迷霧（獨立圖層才能挖洞）
@@ -118,10 +120,10 @@ class FogView(context: Context, private val map: MapView) : View(context) {
 
         // 3) 把走過的地方挖掉
         val latPad = (radiusPx * mpp) / Grid.M_PER_DEG_LAT * 2
-        val north = box.latNorth + latPad
-        val south = box.latSouth - latPad
-        val west = box.lonWest - latPad * 4
-        val east = box.lonEast + latPad * 4
+        val north = projection.north() + latPad
+        val south = projection.south() - latPad
+        val west = projection.west() - latPad * 4
+        val east = projection.east() + latPad * 4
 
         if (radiusPx >= 1.6f) {
             val b = brushFor(radiusPx)
@@ -130,8 +132,7 @@ class FogView(context: Context, private val map: MapView) : View(context) {
                 for (i in 0 until bucket.size) {
                     val lat = bucket.lats[i]
                     if (lat < south || lat > north) continue
-                    probe.setCoords(lat, bucket.lngs[i])
-                    projection.toPixels(probe, reuse)
+                    projection.toScreen(lat, bucket.lngs[i], reuse)
                     val x = reuse.x.toFloat()
                     val y = reuse.y.toFloat()
                     if (x < -radiusPx || y < -radiusPx || x > w + radiusPx || y > h + radiusPx) continue
@@ -145,8 +146,7 @@ class FogView(context: Context, private val map: MapView) : View(context) {
             val half = b.width / 2f
             forEachVisibleBucket(south, north, west, east) { bucket ->
                 if (bucket.size == 0) return@forEachVisibleBucket
-                probe.setCoords(bucket.lats[0], bucket.lngs[0])
-                projection.toPixels(probe, reuse)
+                projection.toScreen(bucket.lats[0], bucket.lngs[0], reuse)
                 val x = reuse.x.toFloat()
                 val y = reuse.y.toFloat()
                 if (x < -blobPx || y < -blobPx || x > w + blobPx || y > h + blobPx) return@forEachVisibleBucket
@@ -163,7 +163,7 @@ class FogView(context: Context, private val map: MapView) : View(context) {
     /** 地標圖示畫在霧之上：去過的亮、沒去過的暗 */
     private fun drawLandmarks(
         canvas: Canvas,
-        projection: org.osmdroid.views.Projection,
+        projection: FogProjection,
         south: Double,
         north: Double,
         west: Double,
@@ -173,8 +173,7 @@ class FogView(context: Context, private val map: MapView) : View(context) {
         for (lm in com.fogofworld.data.Landmarks.all(context)) {
             if (lm.lat < south || lm.lat > north) continue
             if (lm.lng < west || lm.lng > east) continue
-            probe.setCoords(lm.lat, lm.lng)
-            projection.toPixels(probe, reuse)
+            projection.toScreen(lm.lat, lm.lng, reuse)
             val x = reuse.x.toFloat()
             val y = reuse.y.toFloat()
             if (x < 0 || y < 0 || x > width || y > height) continue
@@ -184,10 +183,9 @@ class FogView(context: Context, private val map: MapView) : View(context) {
     }
 
     /** 玩家位置：一圈暖光加上實心點 */
-    private fun drawPlayer(canvas: Canvas, projection: org.osmdroid.views.Projection) {
+    private fun drawPlayer(canvas: Canvas, projection: FogProjection) {
         val fix = FogStore.lastFix ?: return
-        probe.setCoords(fix.lat, fix.lng)
-        projection.toPixels(probe, reuse)
+        projection.toScreen(fix.lat, fix.lng, reuse)
         val x = reuse.x.toFloat()
         val y = reuse.y.toFloat()
         // 光暈的漸層以原點為中心，所以平移座標系再畫

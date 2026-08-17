@@ -47,6 +47,8 @@ jobs:
 
       - name: 建置 Debug APK
         working-directory: android
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: ./gradlew assembleDebug --stacktrace
 
       - name: 上傳 APK 成品

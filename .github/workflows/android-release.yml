@@ -96,6 +96,7 @@ jobs:
           FOW_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           FOW_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           FOW_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: ./gradlew assembleRelease --stacktrace
 
       - name: 確認產物是可安裝的 APK

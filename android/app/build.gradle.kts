@@ -112,4 +112,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
+    // play-services-maps 會帶進舊版 fragment，與 registerForActivityResult 不相容
+    // （lint 的 InvalidFragmentVersionForActivityResult），所以明確指定新版本
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
 }

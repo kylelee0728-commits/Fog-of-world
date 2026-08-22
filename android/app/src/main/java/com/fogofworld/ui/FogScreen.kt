@@ -184,7 +184,7 @@ fun FogScreen(
                         .background(FogAccent.copy(alpha = 0.12f))
                         .border(1.dp, FogAccent.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center,
-                ) { Text(rank.rank.icon, fontSize = 19.sp) }
+                ) { FogIcon(rank.rank.icon, size = 20.dp) }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -353,6 +353,10 @@ fun FogScreen(
                 onImperial = { imperial = it; Settings.setImperial(context, it) },
                 onDailyGoal = { dailyGoal = it; Settings.setDailyGoal(context, it) },
                 onLanguage = onLanguage,
+                onRequestBackground = onRequestBackground,
+                onCheckUpdate = { sheet = Sheet.NONE; onCheckUpdate() },
+                onExport = { sheet = Sheet.NONE; onExport() },
+                onImport = { sheet = Sheet.NONE; onImport() },
                 onReset = {
                     FogStore.reset()
                     controller?.invalidateFog()

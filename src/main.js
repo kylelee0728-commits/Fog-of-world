@@ -7,6 +7,7 @@ import { LANDMARKS } from './landmarks.js';
 import { loadSettings, saveSettings, clearSave } from './storage.js';
 import { renderStats, renderAchievements, renderPassport, toast, setGps, openSheet, closeSheets } from './ui.js';
 import { formatDistance } from './util.js';
+import { icon, landmarkIcon, landmarkIconName } from './icons.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -51,7 +52,7 @@ let trail = L.polyline([], { color: '#f5c86b', weight: 3, opacity: 0.65 }).addTo
 const lmMarkers = new Map();
 for (const lm of LANDMARKS) {
   const m = L.marker([lm.lat, lm.lng], {
-    icon: L.divIcon({ className: '', html: `<div class="lm-marker dim">${lm.icon}</div>`, iconSize: [20, 20] }),
+    icon: L.divIcon({ className: '', html: `<div class="lm-marker dim">${landmarkIcon(lm.icon)}</div>`, iconSize: [20, 20] }),
     keyboard: false,
   }).bindTooltip(`${lm.zh}<br><small>${lm.country}</small>`, { direction: 'top' });
   m.addTo(map);
@@ -121,7 +122,7 @@ state.addEventListener('achievements', (e) => {
     toast({ icon: a.icon, title: `成就解鎖：${a.name}`, sub: a.desc, gold: true });
   }
   if (list.length > 2) {
-    toast({ icon: '🏅', title: `另外還解鎖了 ${list.length - 2} 個成就`, sub: '到「成就」看看拿了哪些', gold: true });
+    toast({ icon: 'award', title: `另外還解鎖了 ${list.length - 2} 個成就`, sub: '到「成就」看看拿了哪些', gold: true });
   }
   if (!$('sheetAchievements').hidden) renderAchievements(state);
 });
@@ -129,10 +130,10 @@ state.addEventListener('achievements', (e) => {
 state.addEventListener('landmarks', (e) => {
   const list = e.detail.landmarks;
   for (const lm of list.slice(0, 2)) {
-    toast({ icon: lm.icon, title: `護照蓋章：${lm.zh}`, sub: `${lm.country} · ${lm.continent}`, gold: true });
+    toast({ icon: landmarkIconName(lm.icon), title: `護照蓋章：${lm.zh}`, sub: `${lm.country} · ${lm.continent}`, gold: true });
   }
   if (list.length > 2) {
-    toast({ icon: '🛂', title: `另外蓋了 ${list.length - 2} 個地標的章`, sub: '到「護照」看看', gold: true });
+    toast({ icon: 'passport', title: `另外蓋了 ${list.length - 2} 個地標的章`, sub: '到「護照」看看', gold: true });
   }
   refreshLandmarkMarkers();
   if (!$('sheetPassport').hidden) renderPassport(state, lastPos, flyToLandmark);
@@ -145,7 +146,7 @@ let wakeLock = null;
 async function startWalking() {
   walking = true;
   $('btnWalk').classList.add('walking');
-  $('btnWalkIcon').textContent = '⏸️';
+  $('btnWalkIcon').innerHTML = icon('pause');
   $('btnWalkText').textContent = '暫停探索';
   tracker.start(settings.sim ? 'sim' : 'gps', {
     start: lastPos ? { lat: lastPos.lat, lng: lastPos.lng } : { ...map.getCenter() },
@@ -158,7 +159,7 @@ async function startWalking() {
 function stopWalking() {
   walking = false;
   $('btnWalk').classList.remove('walking');
-  $('btnWalkIcon').textContent = '🚶';
+  $('btnWalkIcon').innerHTML = icon('walk');
   $('btnWalkText').textContent = '開始探索';
   tracker.stop();
   state.flush();
@@ -169,7 +170,7 @@ $('btnWalk').onclick = () => (walking ? stopWalking() : startWalking());
 
 $('btnLocate').onclick = () => {
   if (lastPos) { map.flyTo([lastPos.lat, lastPos.lng], Math.max(map.getZoom(), 16)); return; }
-  if (!navigator.geolocation) { toast({ icon: '📡', title: '此裝置不支援定位' }); return; }
+  if (!navigator.geolocation) { toast({ icon: 'target', title: '此裝置不支援定位' }); return; }
   setGps('wait', '定位中…');
   navigator.geolocation.getCurrentPosition(
     (p) => {
@@ -191,7 +192,7 @@ function flyToLandmark(lm) {
   if (!lm) return;
   closeSheets();
   map.flyTo([lm.lat, lm.lng], 13, { duration: 1.6 });
-  toast({ icon: lm.icon, title: lm.zh, sub: state.data.landmarks[lm.id] ? '已蓋章 · 光看不算數，走過才是你的' : '還沒去過 —— 這裡還是暗的' });
+  toast({ icon: landmarkIconName(lm.icon), title: lm.zh, sub: state.data.landmarks[lm.id] ? '已蓋章 · 光看不算數，走過才是你的' : '還沒去過 —— 這裡還是暗的' });
 }
 
 // ── 設定 ─────────────────────────────────────────────
@@ -248,7 +249,7 @@ $('btnExport').onclick = () => {
   a.download = `fog-of-world-${profile()}-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast({ icon: '📤', title: '存檔已匯出' });
+  toast({ icon: 'export', title: '存檔已匯出' });
 };
 
 $('btnImport').onclick = () => $('fileImport').click();
@@ -259,9 +260,9 @@ $('fileImport').onchange = async (e) => {
     state.import(await file.text());
     fog.rebuildIndex();
     fog.schedule();
-    toast({ icon: '📥', title: '存檔已匯入' });
+    toast({ icon: 'import', title: '存檔已匯入' });
   } catch (err) {
-    toast({ icon: '⚠️', title: '匯入失敗', sub: String(err.message || err) });
+    toast({ icon: 'flame', title: '匯入失敗', sub: String(err.message || err) });
   }
   e.target.value = '';
 };
@@ -273,7 +274,7 @@ $('btnReset').onclick = () => {
   state.reset();
   fog.rebuildIndex();
   fog.schedule();
-  toast({ icon: '🕯️', title: '長夜再度降臨', sub: '一切從頭開始' });
+  toast({ icon: 'rank_candle', title: '長夜再度降臨', sub: '一切從頭開始' });
 };
 
 // ── 模擬操作 ─────────────────────────────────────────
@@ -343,7 +344,7 @@ function beginGame(sim) {
   const s = state.stats();
   if (s.cells === 0) {
     toast({
-      icon: '🕯️',
+      icon: 'rank_candle',
       title: sim ? '模擬模式已啟動' : '出發吧',
       sub: sim ? '點地圖任一處，或用方向鍵開始移動' : '走動時光會沿著你的路線亮起來',
       ms: 6000,

@@ -21,7 +21,7 @@
 <!-- ── 頂部狀態列 ───────────────────────────────────────── -->
 <header class="topbar" id="topbar">
   <div class="rank">
-    <div class="rank-badge" id="rankIcon">🕯️</div>
+    <div class="rank-badge" id="rankIcon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12,1.6c0.9,1.8 2.2,2.5 2.2,4a2.2,2.2 0 0,1 -4.4,0c0,-1.5 1.3,-2.2 2.2,-4zM9,8.4h6v13H9zM10.8,10.4v9h1.2v-9z"/></svg></div>
     <div class="rank-text">
       <div class="rank-name" id="rankName">提燈人</div>
       <div class="rank-bar"><span id="rankFill"></span></div>
@@ -40,11 +40,11 @@
 
 <!-- ── 底部工具列 ───────────────────────────────────────── -->
 <nav class="dock">
-  <button class="dock-btn" id="btnAchievements" aria-label="成就"><span>🏅</span>成就</button>
-  <button class="dock-btn" id="btnPassport" aria-label="護照"><span>🛂</span>護照</button>
-  <button class="dock-btn dock-main" id="btnWalk" aria-label="開始探索"><span id="btnWalkIcon">🚶</span><em id="btnWalkText">開始探索</em></button>
-  <button class="dock-btn" id="btnLocate" aria-label="回到我的位置"><span>🎯</span>定位</button>
-  <button class="dock-btn" id="btnSettings" aria-label="設定"><span>⚙️</span>設定</button>
+  <button class="dock-btn" id="btnAchievements" aria-label="成就"><span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8,2h8l-1.2,4.2a6.2,6.2 0 0,1 -5.6,0zM12,7.4a5.8,5.8 0 1,0 0,11.6a5.8,5.8 0 0,0 0,-11.6zM12,9.8l1.35,2.9l3.05,0.4l-2.25,2.1l0.58,3.05L12,16.8l-2.73,1.45l0.58,-3.05l-2.25,-2.1l3.05,-0.4z"/></svg></span>成就</button>
+  <button class="dock-btn" id="btnPassport" aria-label="護照"><span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5,3.2h11.4a2.4,2.4 0 0,1 2.4,2.4v12.8a2.4,2.4 0 0,1 -2.4,2.4H5zM7.2,5.4v13.2h9.2a0.6,0.6 0 0,0 0.6,-0.6V6a0.6,0.6 0 0,0 -0.6,-0.6zM11.8,7.6a3.4,3.4 0 1,0 0,6.8a3.4,3.4 0 0,0 0,-6.8zM11.8,9.4a1.6,1.6 0 1,1 0,3.2a1.6,1.6 0 0,1 0,-3.2zM9,16.2h5.6v1.6H9z"/></svg></span>護照</button>
+  <button class="dock-btn dock-main" id="btnWalk" aria-label="開始探索"><span id="btnWalkIcon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.6,3a1.9,1.9 0 1,1 0,3.8a1.9,1.9 0 0,1 0,-3.8zM12.4,7.6l3,1.1l2.2,3.4l-1.6,1.05l-1.7,-2.6l-1.1,3.05l2.5,2.6l1.1,5.2h-2l-0.95,-4.4l-3.1,-3l-1.5,4.2l-1.4,3.2h-2.1l1.7,-4.1l2.35,-6.6l-1.6,0.65v2.9h-1.9v-4.15z"/></svg></span><em id="btnWalkText">開始探索</em></button>
+  <button class="dock-btn" id="btnLocate" aria-label="回到我的位置"><span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12,2.6a1,1 0 0,1 1,1v2.05a6.4,6.4 0 0,1 5.35,5.35h2.05a1,1 0 1,1 0,2h-2.05a6.4,6.4 0 0,1 -5.35,5.35v2.05a1,1 0 1,1 -2,0v-2.05a6.4,6.4 0 0,1 -5.35,-5.35H3.6a1,1 0 1,1 0,-2h2.05a6.4,6.4 0 0,1 5.35,-5.35V3.6a1,1 0 0,1 1,-1zM12,7.6a4.4,4.4 0 1,0 0,8.8a4.4,4.4 0 0,0 0,-8.8zM12,10.2a1.8,1.8 0 1,1 0,3.6a1.8,1.8 0 0,1 0,-3.6z"/></svg></span>定位</button>
+  <button class="dock-btn" id="btnSettings" aria-label="設定"><span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.6,2.4h2.8l0.45,2.35a7.6,7.6 0 0,1 1.85,1.07l2.25,-0.8l1.4,2.42l-1.8,1.55a7.6,7.6 0 0,1 0,2.14l1.8,1.55l-1.4,2.42l-2.25,-0.8a7.6,7.6 0 0,1 -1.85,1.07L13.4,17.6h-2.8l-0.45,-2.23a7.6,7.6 0 0,1 -1.85,-1.07l-2.25,0.8l-1.4,-2.42l1.8,-1.55a7.6,7.6 0 0,1 0,-2.14L4.65,7.44l1.4,-2.42l2.25,0.8a7.6,7.6 0 0,1 1.85,-1.07zM12,7.9a3.1,3.1 0 1,0 0,6.2a3.1,3.1 0 0,0 0,-6.2z"/></svg></span>設定</button>
 </nav>
 
 <!-- ── 模擬模式操縱桿 ───────────────────────────────────── -->
@@ -63,7 +63,7 @@
 <!-- ── 面板：成就 ───────────────────────────────────────── -->
 <section class="sheet" id="sheetAchievements" hidden>
   <div class="sheet-head">
-    <h2>🏅 成就</h2>
+    <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8,2h8l-1.2,4.2a6.2,6.2 0 0,1 -5.6,0zM12,7.4a5.8,5.8 0 1,0 0,11.6a5.8,5.8 0 0,0 0,-11.6zM12,9.8l1.35,2.9l3.05,0.4l-2.25,2.1l0.58,3.05L12,16.8l-2.73,1.45l0.58,-3.05l-2.25,-2.1l3.05,-0.4z"/></svg> 成就</h2>
     <div class="sheet-sub" id="achSummary">0 / 0 已解鎖</div>
     <button class="sheet-close" data-close>✕</button>
   </div>
@@ -73,7 +73,7 @@
 <!-- ── 面板：世界護照 ───────────────────────────────────── -->
 <section class="sheet" id="sheetPassport" hidden>
   <div class="sheet-head">
-    <h2>🛂 世界護照</h2>
+    <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5,3.2h11.4a2.4,2.4 0 0,1 2.4,2.4v12.8a2.4,2.4 0 0,1 -2.4,2.4H5zM7.2,5.4v13.2h9.2a0.6,0.6 0 0,0 0.6,-0.6V6a0.6,0.6 0 0,0 -0.6,-0.6zM11.8,7.6a3.4,3.4 0 1,0 0,6.8a3.4,3.4 0 0,0 0,-6.8zM11.8,9.4a1.6,1.6 0 1,1 0,3.2a1.6,1.6 0 0,1 0,-3.2zM9,16.2h5.6v1.6H9z"/></svg> 世界護照</h2>
     <div class="sheet-sub" id="passSummary">0 / 0 個地標</div>
     <button class="sheet-close" data-close>✕</button>
   </div>
@@ -86,7 +86,7 @@
 <!-- ── 面板：設定 ───────────────────────────────────────── -->
 <section class="sheet" id="sheetSettings" hidden>
   <div class="sheet-head">
-    <h2>⚙️ 設定</h2>
+    <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.6,2.4h2.8l0.45,2.35a7.6,7.6 0 0,1 1.85,1.07l2.25,-0.8l1.4,2.42l-1.8,1.55a7.6,7.6 0 0,1 0,2.14l1.8,1.55l-1.4,2.42l-2.25,-0.8a7.6,7.6 0 0,1 -1.85,1.07L13.4,17.6h-2.8l-0.45,-2.23a7.6,7.6 0 0,1 -1.85,-1.07l-2.25,0.8l-1.4,-2.42l1.8,-1.55a7.6,7.6 0 0,1 0,-2.14L4.65,7.44l1.4,-2.42l2.25,0.8a7.6,7.6 0 0,1 1.85,-1.07zM12,7.9a3.1,3.1 0 1,0 0,6.2a3.1,3.1 0 0,0 0,-6.2z"/></svg> 設定</h2>
     <button class="sheet-close" data-close>✕</button>
   </div>
   <div class="sheet-body">
@@ -115,9 +115,9 @@
       <div class="row-ctl"><input type="range" id="setSimSpeed" min="2" max="60" step="2"><output id="outSimSpeed"></output></div>
     </label>
     <div class="row-actions">
-      <button class="btn" id="btnExport">📤 匯出存檔</button>
-      <button class="btn" id="btnImport">📥 匯入存檔</button>
-      <button class="btn danger" id="btnReset">🗑️ 清除此檔案</button>
+      <button class="btn" id="btnExport"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12,2.6l4.6,4.6l-1.55,1.55L13.1,6.7v8.1h-2.2V6.7L8.95,8.75L7.4,7.2zM4.4,14.6h2.2v4.2h10.8v-4.2h2.2v6.4H4.4z"/></svg> 匯出存檔</button>
+      <button class="btn" id="btnImport"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.9,2.6h2.2v8.1l1.95,-2.05l1.55,1.55L12,14.8L7.4,10.2l1.55,-1.55l1.95,2.05zM4.4,14.6h2.2v4.2h10.8v-4.2h2.2v6.4H4.4z"/></svg> 匯入存檔</button>
+      <button class="btn danger" id="btnReset"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.4,2.6h5.2l0.9,1.8h3.9v2H4.6v-2h3.9zM6.2,7.8h11.6l-0.9,12.2a1.4,1.4 0 0,1 -1.4,1.3H8.5a1.4,1.4 0 0,1 -1.4,-1.3zM9.6,10.2v8.4h1.6v-8.4zM12.8,10.2v8.4h1.6v-8.4z"/></svg> 清除此檔案</button>
     </div>
     <input type="file" id="fileImport" accept="application/json" hidden>
     <p class="fineprint">
@@ -130,7 +130,7 @@
 <!-- ── 開場 ─────────────────────────────────────────────── -->
 <div class="intro" id="intro">
   <div class="intro-card">
-    <div class="intro-fog">🕯️</div>
+    <div class="intro-fog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12,1.6c0.9,1.8 2.2,2.5 2.2,4a2.2,2.2 0 0,1 -4.4,0c0,-1.5 1.3,-2.2 2.2,-4zM9,8.4h6v13H9zM10.8,10.4v9h1.2v-9z"/></svg></div>
     <h1>拾光者</h1>
     <p class="lore">
       那一年，光開始遺失。<br>

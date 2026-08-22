@@ -34,6 +34,13 @@ html, body {
 .leaflet-control-attribution a { color: var(--muted) !important; }
 .leaflet-control-zoom { display: none; }
 
+/* ── 手繪圖示 ───────────────────────────────────────── */
+/* 圖示一律用 currentColor，所以顏色跟著所在文字走 */
+.ic {
+  width: 1em; height: 1em; flex: none; display: inline-block; vertical-align: -0.14em;
+  fill: currentColor;
+}
+
 /* ── 頂部狀態列 ─────────────────────────────────────── */
 .topbar {
   position: absolute; top: 0; left: 0; right: 0; z-index: 500;
@@ -45,7 +52,7 @@ html, body {
 .rank { display: flex; align-items: center; gap: 10px; }
 .rank-badge {
   width: 38px; height: 38px; flex: none; display: grid; place-items: center;
-  font-size: 20px; border-radius: 12px;
+  font-size: 20px; border-radius: 12px; color: var(--accent);
   background: rgba(245, 200, 107, 0.12); border: 1px solid rgba(245, 200, 107, 0.35);
 }
 .rank-text { flex: 1; min-width: 0; }
@@ -101,7 +108,8 @@ html, body {
   display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer;
   transition: color 0.2s, background 0.2s;
 }
-.dock-btn span { font-size: 19px; line-height: 1; }
+.dock-btn span { font-size: 20px; line-height: 1; color: var(--accent); }
+.dock-main span { color: inherit; }
 .dock-btn:active { background: rgba(255, 255, 255, 0.07); }
 .dock-btn.active { color: var(--accent); }
 .dock-main {
@@ -142,7 +150,8 @@ html, body {
   padding: 16px 18px 12px; border-bottom: 1px solid var(--line);
   display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px;
 }
-.sheet-head h2 { margin: 0; font-size: 17px; }
+.sheet-head h2 { margin: 0; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.sheet-head h2 .ic { color: var(--accent); }
 .sheet-head h2 { grid-column: 1; grid-row: 1; }
 .sheet-sub { grid-column: 1; grid-row: 2; font-size: 12px; color: var(--muted); }
 .sheet-close {
@@ -163,8 +172,8 @@ html, body {
 }
 .ach.locked { opacity: 0.45; }
 .ach.unlocked { border-color: rgba(245, 200, 107, 0.4); background: rgba(245, 200, 107, 0.07); }
-.ach-icon { font-size: 22px; line-height: 1; filter: grayscale(1); }
-.ach.unlocked .ach-icon { filter: none; }
+.ach-icon { font-size: 22px; line-height: 1; color: var(--muted); }
+.ach.unlocked .ach-icon { color: var(--accent); }
 .ach-name { font-size: 13px; font-weight: 700; }
 .ach-desc { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
 .ach-date { font-size: 10px; color: var(--accent); margin-top: 4px; }
@@ -187,8 +196,8 @@ html, body {
   border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); margin-bottom: 6px; cursor: pointer;
 }
 .lm.visited { border-color: rgba(245, 200, 107, 0.35); background: rgba(245, 200, 107, 0.06); }
-.lm-stamp { font-size: 18px; opacity: 0.35; }
-.lm.visited .lm-stamp { opacity: 1; }
+.lm-stamp { font-size: 18px; opacity: 0.4; color: var(--muted); }
+.lm.visited .lm-stamp { opacity: 1; color: var(--accent); }
 .lm-main { flex: 1; min-width: 0; }
 .lm-name { font-size: 13px; font-weight: 600; }
 .lm-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
@@ -210,7 +219,10 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 .btn {
   appearance: none; cursor: pointer; font: inherit; font-size: 13px; padding: 10px 14px;
   border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--text);
+  display: inline-flex; align-items: center; gap: 7px;
 }
+.btn .ic { color: var(--accent); }
+.btn.danger .ic { color: var(--danger); }
 .btn:active { transform: translateY(1px); }
 .btn.primary { background: linear-gradient(160deg, var(--accent), #e2a83f); color: #10161f; font-weight: 700; border: 0; }
 .btn.ghost { background: transparent; color: var(--muted); }
@@ -227,7 +239,7 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 .intro[hidden] { display: none; }
 .intro-card { max-width: 380px; text-align: center; animation: fadeUp 0.7s ease; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-.intro-fog { font-size: 62px; animation: drift 7s ease-in-out infinite; }
+.intro-fog { font-size: 62px; color: var(--accent); animation: drift 7s ease-in-out infinite; }
 @keyframes drift { 0%, 100% { transform: translateX(-8px); opacity: 0.8; } 50% { transform: translateX(8px); opacity: 1; } }
 .intro h1 { margin: 8px 0 14px; font-size: 30px; letter-spacing: 5px; }
 .lore { font-size: 13.5px; line-height: 2; color: var(--muted); margin-bottom: 26px; }
@@ -250,7 +262,7 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 .toast b { display: block; font-size: 14px; margin-bottom: 2px; }
 .toast small { color: var(--muted); font-size: 11.5px; }
 .toast-row { display: flex; gap: 11px; align-items: center; }
-.toast-row .ic { font-size: 26px; }
+.toast-row .ic { font-size: 26px; color: var(--accent); }
 @keyframes pop { from { opacity: 0; transform: scale(0.9) translateY(-10px); } to { opacity: 1; transform: none; } }
 
 /* ── 玩家標記 ───────────────────────────────────────── */
@@ -259,8 +271,8 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
   background: var(--accent); border: 3px solid #10161f;
   box-shadow: 0 0 0 2px var(--accent), 0 0 22px 8px rgba(245, 200, 107, 0.55);
 }
-.lm-marker { font-size: 17px; text-align: center; line-height: 1; filter: drop-shadow(0 2px 3px #000); }
-.lm-marker.dim { opacity: 0.5; filter: grayscale(1) drop-shadow(0 2px 3px #000); }
+.lm-marker { font-size: 20px; text-align: center; line-height: 1; color: var(--accent); filter: drop-shadow(0 2px 3px #000); }
+.lm-marker.dim { opacity: 0.55; }
 
 @media (min-width: 720px) {
   .topbar { max-width: 460px; }

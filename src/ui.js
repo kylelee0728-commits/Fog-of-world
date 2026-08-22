@@ -3,6 +3,7 @@
 import { ACHIEVEMENTS, rankFor } from './achievements.js';
 import { LANDMARKS, CONTINENTS, VISIT_RADIUS_M } from './landmarks.js';
 import { distanceM, bearing, compass, formatDate, formatDistance } from './util.js';
+import { icon, landmarkIcon } from './icons.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -12,7 +13,7 @@ export function renderStats(stats) {
   $('statLandmarks').textContent = String(stats.landmarks);
 
   const rank = rankFor(stats.areaKm2);
-  $('rankIcon').textContent = rank.icon;
+  $('rankIcon').innerHTML = icon(rank.icon);
   $('rankName').textContent = `Lv.${rank.level} ${rank.name}`;
   $('rankFill').style.width = `${(rank.progress * 100).toFixed(1)}%`;
   $('rankName').title = rank.next ? `距離「${rank.next.name}」還差 ${(rank.next.at - stats.areaKm2).toFixed(2)} km²` : '已達最高階級';
@@ -28,7 +29,7 @@ export function renderAchievements(state) {
     const pct = Math.min(100, (cur / a.target) * 100);
     return `
       <div class="ach ${at ? 'unlocked' : 'locked'}">
-        <div class="ach-icon">${at ? a.icon : '🔒'}</div>
+        <div class="ach-icon">${icon(at ? a.icon : 'lock')}</div>
         <div style="min-width:0">
           <div class="ach-name">${a.name}</div>
           <div class="ach-desc">${a.desc}</div>
@@ -69,7 +70,7 @@ export function renderPassport(state, pos, onPick) {
       const at = visited[l.id];
       const d = pos ? distanceM(pos.lat, pos.lng, l.lat, l.lng) : null;
       return `<div class="lm ${at ? 'visited' : ''}" data-lm="${l.id}">
-          <div class="lm-stamp">${at ? l.icon : '🔒'}</div>
+          <div class="lm-stamp">${at ? landmarkIcon(l.icon) : icon('lock')}</div>
           <div class="lm-main">
             <div class="lm-name">${l.zh}</div>
             <div class="lm-meta">${l.country} · ${l.en}</div>
@@ -93,10 +94,10 @@ export function renderPassport(state, pos, onPick) {
 
 const MAX_TOASTS = 4;
 let toastSeq = 0;
-export function toast({ icon = '✨', title, sub = '', gold = false, ms = 4200 }) {
+export function toast({ icon: iconName = 'ach_first', title, sub = '', gold = false, ms = 4200 }) {
   const el = document.createElement('div');
   el.className = 'toast' + (gold ? ' gold' : '');
-  el.innerHTML = `<div class="toast-row"><div class="ic">${icon}</div>
+  el.innerHTML = `<div class="toast-row"><div class="ic">${icon(iconName)}</div>
     <div><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</div></div>`;
   const box = $('toasts');
   box.appendChild(el);

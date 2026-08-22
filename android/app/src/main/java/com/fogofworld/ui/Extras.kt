@@ -57,6 +57,7 @@ fun StatsSheet(
     val context = LocalContext.current
     val rank = Ranks.of(stats.areaKm2)
     SheetScaffold(
+        R.drawable.ic_chart,
         stringResource(R.string.sheet_stats),
         "Lv.${rank.level} " + stringResource(rank.rank.nameRes),
         onDismiss,
@@ -71,7 +72,7 @@ fun StatsSheet(
             ) {
                 Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(rank.rank.icon, fontSize = 24.sp)
+                        FogIcon(rank.rank.icon, size = 26.dp)
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(

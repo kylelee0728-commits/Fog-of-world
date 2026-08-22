@@ -1,6 +1,7 @@
 package com.fogofworld.data
 
 import android.content.Context
+import androidx.annotation.DrawableRes
 import org.json.JSONArray
 
 data class Landmark(
@@ -11,7 +12,8 @@ data class Landmark(
     val lng: Double,
     val country: String,
     val continent: String,
-    val icon: String,
+    /** 手繪的分類圖示；資料檔存的是表情符號，讀進來就換成向量圖 */
+    @DrawableRes val icon: Int,
 )
 
 object Landmarks {
@@ -43,7 +45,7 @@ object Landmarks {
                         lng = o.getDouble("lng"),
                         country = o.getString("country"),
                         continent = o.getString("continent"),
-                        icon = o.optString("icon", "📍"),
+                        icon = Icons.forLandmark(o.optString("icon")),
                     )
                 )
             }

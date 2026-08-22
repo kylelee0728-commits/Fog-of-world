@@ -12,6 +12,8 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.view.View
+import androidx.annotation.DrawableRes
+import androidx.core.content.ContextCompat
 import com.fogofworld.data.Bucket
 import com.fogofworld.data.FogStore
 import com.fogofworld.data.Grid
@@ -71,10 +73,15 @@ class FogView(context: Context, private val source: () -> FogProjection?) : View
     }
 
     private val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = 36f
-        textAlign = Paint.Align.CENTER
+        isFilterBitmap = true
         setShadowLayer(3f, 0f, 1f, Color.BLACK)
     }
+
+    /** 地標圖示的邊長（像素）；用螢幕密度換算，各種機型上大小才一致 */
+    private val iconSize = (22 * context.resources.displayMetrics.density).roundToInt()
+
+    /** drawable id → 已上色的點陣圖。地標只有八種分類，快取起來一次就夠 */
+    private val iconCache = HashMap<Int, Bitmap>()
 
     private val playerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0xF5, 0xC8, 0x6B) }
 
@@ -177,8 +184,9 @@ class FogView(context: Context, private val source: () -> FogProjection?) : View
             val x = reuse.x.toFloat()
             val y = reuse.y.toFloat()
             if (x < 0 || y < 0 || x > width || y > height) continue
+            val icon = iconBitmap(lm.icon)
             iconPaint.alpha = if (visited.containsKey(lm.id)) 255 else 110
-            canvas.drawText(lm.icon, x, y + iconPaint.textSize / 3f, iconPaint)
+            canvas.drawBitmap(icon, x - icon.width / 2f, y - icon.height / 2f, iconPaint)
         }
     }
 
@@ -227,6 +235,18 @@ class FogView(context: Context, private val source: () -> FogProjection?) : View
                 index[Grid.key(i, j)]?.let(action)
             }
         }
+    }
+
+    /** 把向量圖示畫成指定顏色的點陣圖，之後每一幀直接貼上 */
+    private fun iconBitmap(@DrawableRes id: Int): Bitmap = iconCache.getOrPut(id) {
+        val drawable = requireNotNull(ContextCompat.getDrawable(context, id)) {
+            "找不到地標圖示 drawable"
+        }.mutate()
+        drawable.setTint(Color.rgb(0xF5, 0xC8, 0x6B))
+        val bmp = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
+        drawable.setBounds(0, 0, iconSize, iconSize)
+        drawable.draw(Canvas(bmp))
+        bmp
     }
 
     /** 依半徑快取一支柔邊筆刷 */

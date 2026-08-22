@@ -27,14 +27,14 @@
     <string name="toast_achievement_more">%1$d more unlocked</string>
     <string name="toast_achievement_more_sub">Check Awards to see them</string>
     <string name="toast_stamp">Stamped: %1$s</string>
-    <string name="sheet_achievements">🏅 Awards</string>
+    <string name="sheet_achievements">Awards</string>
     <string name="sheet_achievements_sub">%1$d of %2$d unlocked</string>
-    <string name="sheet_passport">🛂 World Passport</string>
+    <string name="sheet_passport">World Passport</string>
     <string name="sheet_passport_sub">%1$d of %2$d places · %3$d continents</string>
-    <string name="sheet_settings">⚙️ Settings</string>
-    <string name="sheet_stats">📊 My Record</string>
+    <string name="sheet_settings">Settings</string>
+    <string name="sheet_stats">My Record</string>
     <string name="version_label">Version %1$s</string>
-    <string name="nearest_title">%1$s Nearest: %2$s</string>
+    <string name="nearest_title">Nearest: %1$s</string>
     <string name="nearest_sub">%1$s, %2$s away · get within 1 km to stamp</string>
     <string name="unlocked_on">Unlocked %1$s</string>
     <string name="set_radius">Light radius</string>
@@ -59,10 +59,10 @@
     <string name="units_imperial">Imperial (miles)</string>
     <string name="backup_title">Backup</string>
     <string name="backup_sub">Files work with the web version too. Export before reinstalling.</string>
-    <string name="action_export">📤 Export</string>
-    <string name="action_import">📥 Import</string>
-    <string name="action_check_update">⬇️ Check for updates</string>
-    <string name="action_reset">🗑️ Erase everything</string>
+    <string name="action_export">Export</string>
+    <string name="action_import">Import</string>
+    <string name="action_check_update">Check for updates</string>
+    <string name="action_reset">Erase everything</string>
     <string name="reset_title">Erase everything?</string>
     <string name="reset_text">Everything you lit goes dark again, awards and stamps reset. This cannot be undone.</string>
     <string name="action_confirm_erase">Erase</string>
@@ -204,22 +204,4 @@
     <string name="ach_cells_1000_desc">Light 1000 cells</string>
     <string name="ach_cells_10000_name">End of the Long Night</string>
     <string name="ach_cells_10000_desc">Light 10000 cells</string>
-    <string name="set_map_source">Map source</string>
-    <string name="map_source_osm">OpenStreetMap (public)</string>
-    <string name="map_source_custom">Custom tile URL</string>
-    <string name="map_url_title">Custom map source</string>
-    <string name="map_url_hint">https://example.com/{z}/{x}/{y}.png</string>
-    <string name="map_url_note">Enter a tile URL that allows caching (with {z}/{x}/{y}). Leave empty for OpenStreetMap.
-Only custom sources can prefetch — the public OSM server\'s usage policy forbids preloading and bulk downloads.</string>
-    <string name="save">Save</string>
-    <string name="offline_title">Offline map</string>
-    <string name="offline_sub">Save the current area now so it loads instantly while walking</string>
-    <string name="offline_download">⬇️ Download this area</string>
-    <string name="offline_blocked">The public OpenStreetMap server does not allow preloading. Set a custom tile source above to use this.</string>
-    <string name="offline_running">Downloading %1$d / %2$d</string>
-    <string name="offline_done">Saved %1$d tiles. This area now loads instantly.</string>
-    <string name="offline_failed">Download did not finish — network or source limits.</string>
-    <string name="offline_too_many">That area needs %1$d tiles — too many. Zoom in a bit and try again.</string>
-    <string name="cache_cleared">Map cache cleared</string>
-    <string name="action_clear_cache">🧹 Clear map cache</string>
 </resources>

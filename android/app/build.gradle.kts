@@ -18,7 +18,7 @@ val releaseKeystore: String? = System.getenv("FOW_KEYSTORE_FILE")?.takeIf { it.i
  * 所以這裡編成 YYMMPP：26.8 → 260800、26.8.1 → 260801、26.9 → 260900。
  * 每個月最多 99 個小版本，且跨年遞增（27.1 → 270100）。
  */
-val appVersionName = "26.8.9"
+val appVersionName = "26.8.10"
 
 val appVersionCode = run {
     val m = Regex("""^(\d{2})\.(\d{1,2})(?:\.(\d{1,2}))?$""").find(appVersionName)
@@ -55,7 +55,7 @@ android {
         resourceConfigurations += listOf("en", "ja", "zh")
 
         // Google Maps 金鑰不進版控：本機放 local.properties，CI 走 GitHub Secret。
-        // 沒有金鑰時 MAPS_API_KEY 是空字串，App 會自動退回 OpenStreetMap。
+        // 地圖只用 Google Maps，沒有金鑰的話地圖會是空白的（迷霧與地標仍會畫）。
         val mapsKey: String = System.getenv("MAPS_API_KEY")?.takeIf { it.isNotBlank() }
             ?: runCatching {
                 val props = Properties()
@@ -110,7 +110,6 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.material3:material3")
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     // play-services-maps 會帶進舊版 fragment，與 registerForActivityResult 不相容
     // （lint 的 InvalidFragmentVersionForActivityResult），所以明確指定新版本

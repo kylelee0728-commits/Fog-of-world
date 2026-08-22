@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 手繪圖示，24x24 網格；顏色一律由使用端 tint -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,3.4l4,4.6h-2.9v3.4h-2.2V8H8zM2.6,14.6h18.8v2H2.6zM5,18.4h14v2H5zM4.6,10.4l1.55,1.55l-1.55,1.55l-1.55,-1.55zM19.4,10.4l1.55,1.55l-1.55,1.55l-1.55,-1.55z" />
+</vector>

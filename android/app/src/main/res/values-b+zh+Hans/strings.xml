@@ -27,14 +27,14 @@
     <string name="toast_achievement_more">另外还解锁了 %1$d 个成就</string>
     <string name="toast_achievement_more_sub">到“成就”看看拿了哪些</string>
     <string name="toast_stamp">护照盖章：%1$s</string>
-    <string name="sheet_achievements">🏅 成就</string>
+    <string name="sheet_achievements">成就</string>
     <string name="sheet_achievements_sub">%1$d / %2$d 已解锁</string>
-    <string name="sheet_passport">🛂 世界护照</string>
+    <string name="sheet_passport">世界护照</string>
     <string name="sheet_passport_sub">%1$d / %2$d 个地标 · %3$d 个大洲</string>
-    <string name="sheet_settings">⚙️ 设置</string>
-    <string name="sheet_stats">📊 我的记录</string>
+    <string name="sheet_settings">设置</string>
+    <string name="sheet_stats">我的记录</string>
     <string name="version_label">版本 %1$s</string>
-    <string name="nearest_title">%1$s 最近的目标：%2$s</string>
+    <string name="nearest_title">最近的目标：%1$s</string>
     <string name="nearest_sub">往%1$s方 %2$s · 走进 1 公里内即可盖章</string>
     <string name="unlocked_on">%1$s 解锁</string>
     <string name="set_radius">点亮半径</string>
@@ -59,10 +59,10 @@
     <string name="units_imperial">英制（英里）</string>
     <string name="backup_title">备份</string>
     <string name="backup_sub">导出的文件与网页版通用，可以互相导入。重装前记得先导出。</string>
-    <string name="action_export">📤 导出存档</string>
-    <string name="action_import">📥 导入存档</string>
-    <string name="action_check_update">⬇️ 检查更新</string>
-    <string name="action_reset">🗑️ 清除所有记录</string>
+    <string name="action_export">导出存档</string>
+    <string name="action_import">导入存档</string>
+    <string name="action_check_update">检查更新</string>
+    <string name="action_reset">清除所有记录</string>
     <string name="reset_title">清除所有记录？</string>
     <string name="reset_text">点亮过的地方会重新暗下来，成就与护照也会归零，此操作无法恢复。</string>
     <string name="action_confirm_erase">确定清除</string>
@@ -204,22 +204,4 @@
     <string name="ach_cells_1000_desc">点亮 1000 个光格</string>
     <string name="ach_cells_10000_name">长夜终结者</string>
     <string name="ach_cells_10000_desc">点亮 10000 个光格</string>
-    <string name="set_map_source">地图来源</string>
-    <string name="map_source_osm">OpenStreetMap（公用）</string>
-    <string name="map_source_custom">自定义瓦片网址</string>
-    <string name="map_url_title">自定义地图来源</string>
-    <string name="map_url_hint">https://example.com/{z}/{x}/{y}.png</string>
-    <string name="map_url_note">填入允许缓存的瓦片服务网址（含 {z}/{x}/{y}）。留空则使用 OpenStreetMap。
-自定义来源才能预先下载，因为 OSM 公用服务器的使用政策禁止预载与批量下载。</string>
-    <string name="save">保存</string>
-    <string name="offline_title">离线地图</string>
-    <string name="offline_sub">先把当前画面这一区存起来，走的时候就不用等</string>
-    <string name="offline_download">⬇️ 下载当前这一区</string>
-    <string name="offline_blocked">OpenStreetMap 公用服务器不允许预先下载。要用这个功能，请先在上面设置自定义瓦片来源。</string>
-    <string name="offline_running">下载中 %1$d / %2$d</string>
-    <string name="offline_done">已存好 %1$d 张瓦片，这一区之后不用再等</string>
-    <string name="offline_failed">下载没有完成，可能是网络或来源限制。</string>
-    <string name="offline_too_many">这个范围要下载 %1$d 张瓦片，太多了。请先把地图放大一点再试。</string>
-    <string name="cache_cleared">地图缓存已清除</string>
-    <string name="action_clear_cache">🧹 清除地图缓存</string>
 </resources>

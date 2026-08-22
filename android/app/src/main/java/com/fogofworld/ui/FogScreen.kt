@@ -52,15 +52,13 @@ import com.fogofworld.R
 import com.fogofworld.data.AppLanguage
 import com.fogofworld.data.FogStore
 import com.fogofworld.data.Format
-import com.fogofworld.data.MapSource
-import com.fogofworld.data.TileCache
 import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Ranks
 import com.fogofworld.data.Settings
 
 private enum class Sheet { NONE, ACHIEVEMENTS, PASSPORT, SETTINGS, STATS }
 
-data class Toast(val id: Long, val icon: String, val title: String, val sub: String)
+data class Toast(val id: Long, @androidx.annotation.DrawableRes val icon: Int, val title: String, val sub: String)
 
 @Composable
 fun FogScreen(
@@ -94,8 +92,6 @@ fun FogScreen(
     var imperial by remember { mutableStateOf(Settings.imperial(context)) }
     var dailyGoal by remember { mutableStateOf(Settings.dailyGoal(context)) }
     val language = AppLanguage.fromTag(Settings.languageTag(context))
-    var tileUrl by remember { mutableStateOf(Settings.tileUrl(context)) }
-    var offlineStatus by remember { mutableStateOf("") }
 
     // 事件：撥霧重畫、跟隨鏡頭、成就與蓋章提示
     LaunchedEffect(Unit) {
@@ -121,7 +117,7 @@ fun FogScreen(
                     if (event.achievements.size > 2) {
                         toasts.add(
                             Toast(
-                                System.nanoTime(), "🏅",
+                                System.nanoTime(), R.drawable.ic_award,
                                 context.getString(R.string.toast_achievement_more, event.achievements.size - 2),
                                 context.getString(R.string.toast_achievement_more_sub),
                             )
@@ -247,7 +243,7 @@ fun FogScreen(
                             Modifier.padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(t.icon, fontSize = 24.sp)
+                            FogIcon(t.icon, size = 24.dp)
                             Spacer(Modifier.width(11.dp))
                             Column {
                                 Text(t.title, color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -277,8 +273,8 @@ fun FogScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                DockButton(Modifier.weight(1f), "🏅", stringResource(R.string.dock_achievements)) { sheet = Sheet.ACHIEVEMENTS }
-                DockButton(Modifier.weight(1f), "🛂", stringResource(R.string.dock_passport)) { sheet = Sheet.PASSPORT }
+                DockButton(Modifier.weight(1f), R.drawable.ic_award, stringResource(R.string.dock_achievements)) { sheet = Sheet.ACHIEVEMENTS }
+                DockButton(Modifier.weight(1f), R.drawable.ic_passport, stringResource(R.string.dock_passport)) { sheet = Sheet.PASSPORT }
                 Button(
                     onClick = onToggleWalk,
                     modifier = Modifier.weight(1.6f).height(58.dp),
@@ -291,7 +287,11 @@ fun FogScreen(
                     ),
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(if (walking) "⏸️" else "🚶", fontSize = 17.sp)
+                        FogIcon(
+                            if (walking) R.drawable.ic_pause else R.drawable.ic_walk,
+                            size = 19.dp,
+                            tint = Color(0xFF10161F),
+                        )
                         Text(
                             stringResource(if (walking) R.string.dock_pause else R.string.dock_start),
                             fontSize = 11.sp,
@@ -301,13 +301,13 @@ fun FogScreen(
                         )
                     }
                 }
-                DockButton(Modifier.weight(1f), "🎯", stringResource(R.string.dock_locate)) {
+                DockButton(Modifier.weight(1f), R.drawable.ic_target, stringResource(R.string.dock_locate)) {
                     FogStore.lastFix?.let {
                         controller?.animateTo(it.lat, it.lng)
                         controller?.setZoom(16.0)
                     }
                 }
-                DockButton(Modifier.weight(1f), "⚙️", stringResource(R.string.dock_settings)) { sheet = Sheet.SETTINGS }
+                DockButton(Modifier.weight(1f), R.drawable.ic_settings, stringResource(R.string.dock_settings)) { sheet = Sheet.SETTINGS }
             }
         }
 
@@ -333,8 +333,6 @@ fun FogScreen(
                 imperial = imperial,
                 dailyGoalM = dailyGoal,
                 language = language,
-                tileUrl = tileUrl,
-                offlineStatus = offlineStatus,
                 hasBackground = hasBackgroundPermission,
                 appVersion = appVersion,
                 onRadius = {
@@ -355,44 +353,6 @@ fun FogScreen(
                 onImperial = { imperial = it; Settings.setImperial(context, it) },
                 onDailyGoal = { dailyGoal = it; Settings.setDailyGoal(context, it) },
                 onLanguage = onLanguage,
-                onTileUrl = { url ->
-                    tileUrl = url
-                    Settings.setTileUrl(context, url)
-                    // 換來源要重設快取政策（預載開關）並讓地圖重新取圖
-                    TileCache.configure(context, java.io.File(context.filesDir, "osmdroid"))
-                    controller?.osmMapView()?.setTileSource(MapSource.current(context))
-                    offlineStatus = ""
-                },
-                onDownloadArea = {
-                    val map = controller?.osmMapView()
-                    if (map != null) {
-                        TileCache.downloadVisibleArea(context, map) { p ->
-                            offlineStatus = when (p) {
-                                is TileCache.Progress.Counting ->
-                                    context.getString(R.string.offline_running, 0, p.tiles)
-                                is TileCache.Progress.Running ->
-                                    context.getString(R.string.offline_running, p.done, p.total)
-                                is TileCache.Progress.Done ->
-                                    context.getString(R.string.offline_done, p.tiles)
-                                is TileCache.Progress.TooMany ->
-                                    context.getString(R.string.offline_too_many, p.tiles)
-                                is TileCache.Progress.NotAllowed ->
-                                    context.getString(R.string.offline_blocked)
-                                is TileCache.Progress.Failed ->
-                                    context.getString(R.string.offline_failed)
-                            }
-                        }
-                    }
-                },
-                onClearCache = {
-                    TileCache.clear(context)
-                    controller?.invalidateFog()
-                    offlineStatus = context.getString(R.string.cache_cleared)
-                },
-                onRequestBackground = onRequestBackground,
-                onCheckUpdate = { sheet = Sheet.NONE; onCheckUpdate() },
-                onExport = { sheet = Sheet.NONE; onExport() },
-                onImport = { sheet = Sheet.NONE; onImport() },
                 onReset = {
                     FogStore.reset()
                     controller?.invalidateFog()
@@ -451,7 +411,12 @@ private fun StatChip(modifier: Modifier, value: String, label: String) {
 }
 
 @Composable
-private fun DockButton(modifier: Modifier, icon: String, label: String, onClick: () -> Unit) {
+private fun DockButton(
+    modifier: Modifier,
+    @androidx.annotation.DrawableRes icon: Int,
+    label: String,
+    onClick: () -> Unit,
+) {
     // 刻意不用 TextButton：它預設左右各有 12dp 內距又有最小寬度，
     // 五個項目擠一列時會把中文字切掉。
     Column(
@@ -461,7 +426,7 @@ private fun DockButton(modifier: Modifier, icon: String, label: String, onClick:
             .padding(vertical = 8.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(icon, fontSize = 18.sp)
+        FogIcon(icon, size = 20.dp)
         Spacer(Modifier.height(3.dp))
         Text(
             label,
@@ -510,7 +475,7 @@ private fun IntroOverlay(onStart: () -> Unit) {
             Modifier.padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("🕯️", fontSize = 58.sp)
+            FogIcon(R.drawable.ic_rank_candle, size = 58.dp)
             Spacer(Modifier.height(8.dp))
             Text(stringResource(R.string.app_name), color = FogText, fontSize = 30.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(18.dp))

@@ -1,5 +1,6 @@
 package com.fogofworld.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -21,8 +22,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -52,7 +51,6 @@ import com.fogofworld.data.Format
 import com.fogofworld.data.Grid
 import com.fogofworld.data.Landmark
 import com.fogofworld.data.Landmarks
-import com.fogofworld.data.MapSource
 import com.fogofworld.data.Stats
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -64,7 +62,13 @@ internal fun formatDate(ts: Long): String =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun SheetScaffold(title: String, subtitle: String, onDismiss: () -> Unit, body: @Composable () -> Unit) {
+internal fun SheetScaffold(
+    @DrawableRes icon: Int,
+    title: String,
+    subtitle: String,
+    onDismiss: () -> Unit,
+    body: @Composable () -> Unit,
+) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -72,9 +76,15 @@ internal fun SheetScaffold(title: String, subtitle: String, onDismiss: () -> Uni
         contentColor = FogText,
     ) {
         Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
-            Text(title, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = FogText)
-            if (subtitle.isNotEmpty()) {
-                Text(subtitle, fontSize = 12.sp, color = FogMuted)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FogIcon(icon, size = 20.dp)
+                Spacer(Modifier.width(9.dp))
+                Column {
+                    Text(title, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = FogText)
+                    if (subtitle.isNotEmpty()) {
+                        Text(subtitle, fontSize = 12.sp, color = FogMuted)
+                    }
+                }
             }
             Spacer(Modifier.height(12.dp))
             body()
@@ -88,6 +98,7 @@ internal fun SheetScaffold(title: String, subtitle: String, onDismiss: () -> Uni
 fun AchievementSheet(stats: Stats, onDismiss: () -> Unit) {
     val unlocked = FogStore.unlockedAchievementIds()
     SheetScaffold(
+        R.drawable.ic_award,
         stringResource(R.string.sheet_achievements),
         stringResource(R.string.sheet_achievements_sub, unlocked.size, Achievements.COUNT),
         onDismiss,
@@ -105,7 +116,11 @@ fun AchievementSheet(stats: Stats, onDismiss: () -> Unit) {
                     border = BorderStroke(1.dp, if (at != null) FogAccent.copy(alpha = 0.4f) else FogLine),
                 ) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
-                        Text(if (at != null) a.icon else "🔒", fontSize = 22.sp)
+                        FogIcon(
+                            if (at != null) a.icon else R.drawable.ic_lock,
+                            size = 22.dp,
+                            tint = if (at != null) FogAccent else FogMuted.copy(alpha = 0.6f),
+                        )
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
@@ -115,10 +130,14 @@ fun AchievementSheet(stats: Stats, onDismiss: () -> Unit) {
                             Text(stringResource(a.descRes), fontSize = 11.sp, color = FogMuted)
                             Spacer(Modifier.height(5.dp))
                             if (at != null) {
-                                Text(
-                                    stringResource(R.string.unlocked_on, formatDate(at)),
-                                    fontSize = 10.sp, color = FogAccent,
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    FogIcon(R.drawable.ic_check, size = 11.dp)
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        stringResource(R.string.unlocked_on, formatDate(at)),
+                                        fontSize = 10.sp, color = FogAccent,
+                                    )
+                                }
                             } else {
                                 LinearProgressIndicator(
                                     progress = { progress },
@@ -147,6 +166,7 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
     val continents = visited.keys.mapNotNull { id -> all.firstOrNull { it.id == id }?.continent }.toSet()
 
     SheetScaffold(
+        R.drawable.ic_passport,
         stringResource(R.string.sheet_passport),
         stringResource(R.string.sheet_passport_sub, visited.size, all.size, continents.size),
         onDismiss,
@@ -176,15 +196,19 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
                         shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, FogTeal.copy(alpha = 0.3f)),
                     ) {
-                        Column(Modifier.padding(12.dp)) {
-                            Text(
-                                stringResource(R.string.nearest_title, lm.icon, Format.landmarkName(context, lm)),
-                                fontSize = 14.sp, fontWeight = FontWeight.Bold, color = FogText,
-                            )
-                            Text(
-                                stringResource(R.string.nearest_sub, dir, Format.distance(context, dist)),
-                                fontSize = 12.sp, color = FogMuted,
-                            )
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            FogIcon(lm.icon, size = 20.dp, tint = FogTeal)
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.nearest_title, Format.landmarkName(context, lm)),
+                                    fontSize = 14.sp, fontWeight = FontWeight.Bold, color = FogText,
+                                )
+                                Text(
+                                    stringResource(R.string.nearest_sub, dir, Format.distance(context, dist)),
+                                    fontSize = 12.sp, color = FogMuted,
+                                )
+                            }
                         }
                     }
                     Spacer(Modifier.height(10.dp))
@@ -223,7 +247,11 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
                             Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(if (at != null) lm.icon else "🔒", fontSize = 18.sp)
+                            FogIcon(
+                                if (at != null) lm.icon else R.drawable.ic_lock,
+                                size = 18.dp,
+                                tint = if (at != null) FogAccent else FogMuted.copy(alpha = 0.6f),
+                            )
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(
@@ -261,8 +289,6 @@ fun SettingsSheet(
     imperial: Boolean,
     dailyGoalM: Int,
     language: AppLanguage,
-    tileUrl: String,
-    offlineStatus: String,
     hasBackground: Boolean,
     appVersion: String,
     onRadius: (Int) -> Unit,
@@ -274,9 +300,6 @@ fun SettingsSheet(
     onImperial: (Boolean) -> Unit,
     onDailyGoal: (Int) -> Unit,
     onLanguage: (AppLanguage) -> Unit,
-    onTileUrl: (String) -> Unit,
-    onDownloadArea: () -> Unit,
-    onClearCache: () -> Unit,
     onRequestBackground: () -> Unit,
     onCheckUpdate: () -> Unit,
     onExport: () -> Unit,
@@ -287,10 +310,9 @@ fun SettingsSheet(
     val context = LocalContext.current
     var confirmReset by remember { mutableStateOf(false) }
     var pickLanguage by remember { mutableStateOf(false) }
-    var editUrl by remember { mutableStateOf(false) }
-    val prefetchAllowed = MapSource.allowsPrefetch(context)
 
     SheetScaffold(
+        R.drawable.ic_settings,
         stringResource(R.string.sheet_settings),
         stringResource(R.string.version_label, appVersion),
         onDismiss,
@@ -352,7 +374,7 @@ fun SettingsSheet(
                 autoUpdate, onAutoUpdate,
             )
 
-            SmallAction(stringResource(R.string.action_check_update), Modifier.fillMaxWidth(), onCheckUpdate)
+            SmallAction(R.drawable.ic_download, stringResource(R.string.action_check_update), Modifier.fillMaxWidth(), onClick = onCheckUpdate)
 
             Spacer(Modifier.height(12.dp))
             Surface(
@@ -380,42 +402,18 @@ fun SettingsSheet(
             }
 
             Spacer(Modifier.height(16.dp))
-            Text(stringResource(R.string.offline_title), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText)
-            Text(stringResource(R.string.offline_sub), fontSize = 11.sp, color = FogMuted)
-            Spacer(Modifier.height(8.dp))
-
-            ValueRow(
-                stringResource(R.string.set_map_source),
-                if (tileUrl.isBlank()) stringResource(R.string.map_source_osm)
-                else stringResource(R.string.map_source_custom),
-            ) { editUrl = true }
-
-            if (prefetchAllowed) {
-                SmallAction(stringResource(R.string.offline_download), Modifier.fillMaxWidth(), onDownloadArea)
-            } else {
-                Text(
-                    stringResource(R.string.offline_blocked),
-                    fontSize = 11.sp, color = FogMuted, lineHeight = 17.sp,
-                    modifier = Modifier.padding(vertical = 6.dp),
-                )
-            }
-            if (offlineStatus.isNotEmpty()) {
-                Text(offlineStatus, fontSize = 11.sp, color = FogAccent, modifier = Modifier.padding(top = 4.dp))
-            }
-            Spacer(Modifier.height(8.dp))
-            SmallAction(stringResource(R.string.action_clear_cache), Modifier.fillMaxWidth(), onClearCache)
-
-            Spacer(Modifier.height(16.dp))
             Text(stringResource(R.string.backup_title), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FogText)
             Text(stringResource(R.string.backup_sub), fontSize = 11.sp, color = FogMuted)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SmallAction(stringResource(R.string.action_export), Modifier.weight(1f), onExport)
-                SmallAction(stringResource(R.string.action_import), Modifier.weight(1f), onImport)
+                SmallAction(R.drawable.ic_export, stringResource(R.string.action_export), Modifier.weight(1f), onClick = onExport)
+                SmallAction(R.drawable.ic_import, stringResource(R.string.action_import), Modifier.weight(1f), onClick = onImport)
             }
 
             Spacer(Modifier.height(16.dp))
             TextButton(onClick = { confirmReset = true }) {
+                FogIcon(R.drawable.ic_trash, size = 16.dp, tint = FogDanger)
+                Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.action_reset), color = FogDanger, fontSize = 13.sp)
             }
             Spacer(Modifier.height(8.dp))
@@ -447,39 +445,6 @@ fun SettingsSheet(
             },
             confirmButton = {
                 TextButton(onClick = { pickLanguage = false }) {
-                    Text(stringResource(R.string.cancel), color = FogMuted)
-                }
-            },
-        )
-    }
-
-    if (editUrl) {
-        var draft by remember { mutableStateOf(tileUrl) }
-        AlertDialog(
-            onDismissRequest = { editUrl = false },
-            containerColor = FogPanel,
-            title = { Text(stringResource(R.string.map_url_title), color = FogText) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = draft,
-                        onValueChange = { draft = it },
-                        singleLine = true,
-                        placeholder = { Text(stringResource(R.string.map_url_hint), color = FogMuted, fontSize = 12.sp) },
-                        textStyle = LocalTextStyle.current.copy(color = FogText, fontSize = 13.sp),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    Text(stringResource(R.string.map_url_note), color = FogMuted, fontSize = 11.sp, lineHeight = 17.sp)
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { editUrl = false; onTileUrl(draft.trim()) }) {
-                    Text(stringResource(R.string.save), color = FogAccent)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { editUrl = false }) {
                     Text(stringResource(R.string.cancel), color = FogMuted)
                 }
             },
@@ -536,17 +501,28 @@ private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChang
 
 /** 小按鈕：不用 Button，避免預設內距把文字擠掉 */
 @Composable
-private fun SmallAction(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun SmallAction(
+    @DrawableRes icon: Int,
+    label: String,
+    modifier: Modifier = Modifier,
+    tint: Color = FogAccent,
+    onClick: () -> Unit,
+) {
     Surface(
         modifier = modifier.clickable(onClick = onClick),
         color = Color.White.copy(alpha = 0.05f),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, FogLine),
     ) {
-        Text(
-            label, color = FogText, fontSize = 13.sp, maxLines = 1, textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 11.dp, horizontal = 6.dp),
-        )
+        Row(
+            Modifier.fillMaxWidth().padding(vertical = 11.dp, horizontal = 6.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FogIcon(icon, size = 16.dp, tint = tint)
+            Spacer(Modifier.width(6.dp))
+            Text(label, color = FogText, fontSize = 13.sp, maxLines = 1, textAlign = TextAlign.Center)
+        }
     }
 }
 

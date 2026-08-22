@@ -27,14 +27,14 @@
     <string name="toast_achievement_more">另外還解鎖了 %1$d 個成就</string>
     <string name="toast_achievement_more_sub">到「成就」看看拿了哪些</string>
     <string name="toast_stamp">護照蓋章：%1$s</string>
-    <string name="sheet_achievements">🏅 成就</string>
+    <string name="sheet_achievements">成就</string>
     <string name="sheet_achievements_sub">%1$d / %2$d 已解鎖</string>
-    <string name="sheet_passport">🛂 世界護照</string>
+    <string name="sheet_passport">世界護照</string>
     <string name="sheet_passport_sub">%1$d / %2$d 個地標 · %3$d 個大洲</string>
-    <string name="sheet_settings">⚙️ 設定</string>
-    <string name="sheet_stats">📊 我的紀錄</string>
+    <string name="sheet_settings">設定</string>
+    <string name="sheet_stats">我的紀錄</string>
     <string name="version_label">版本 %1$s</string>
-    <string name="nearest_title">%1$s 最近的目標：%2$s</string>
+    <string name="nearest_title">最近的目標：%1$s</string>
     <string name="nearest_sub">往%1$s方 %2$s · 走進 1 公里內即可蓋章</string>
     <string name="unlocked_on">%1$s 解鎖</string>
     <string name="set_radius">點亮半徑</string>
@@ -59,10 +59,10 @@
     <string name="units_imperial">英制（英里）</string>
     <string name="backup_title">備份</string>
     <string name="backup_sub">匯出的檔案與網頁版通用，可以互相匯入。重裝前記得先匯出。</string>
-    <string name="action_export">📤 匯出存檔</string>
-    <string name="action_import">📥 匯入存檔</string>
-    <string name="action_check_update">⬇️ 檢查更新</string>
-    <string name="action_reset">🗑️ 清除所有紀錄</string>
+    <string name="action_export">匯出存檔</string>
+    <string name="action_import">匯入存檔</string>
+    <string name="action_check_update">檢查更新</string>
+    <string name="action_reset">清除所有紀錄</string>
     <string name="reset_title">清除所有紀錄？</string>
     <string name="reset_text">點亮過的地方會重新暗下來，成就與護照也會歸零，這個動作無法復原。</string>
     <string name="action_confirm_erase">確定清除</string>
@@ -204,22 +204,4 @@
     <string name="ach_cells_1000_desc">點亮 1000 個光格</string>
     <string name="ach_cells_10000_name">長夜終結者</string>
     <string name="ach_cells_10000_desc">點亮 10000 個光格</string>
-    <string name="set_map_source">地圖來源</string>
-    <string name="map_source_osm">OpenStreetMap（公用）</string>
-    <string name="map_source_custom">自訂圖磚網址</string>
-    <string name="map_url_title">自訂地圖來源</string>
-    <string name="map_url_hint">https://example.com/{z}/{x}/{y}.png</string>
-    <string name="map_url_note">填入允許快取的圖磚服務網址（含 {z}/{x}/{y}）。留空則使用 OpenStreetMap。
-自訂來源才能預先下載，因為 OSM 公用伺服器的使用政策禁止預載與批次下載。</string>
-    <string name="save">儲存</string>
-    <string name="offline_title">離線地圖</string>
-    <string name="offline_sub">先把目前畫面這一區存起來，走的時候就不用等</string>
-    <string name="offline_download">⬇️ 下載目前這一區</string>
-    <string name="offline_blocked">OpenStreetMap 公用伺服器不允許預先下載。要用這個功能，請先在上面設定自訂圖磚來源。</string>
-    <string name="offline_running">下載中 %1$d / %2$d</string>
-    <string name="offline_done">已存好 %1$d 張圖磚，這一區之後不用再等</string>
-    <string name="offline_failed">下載沒有完成，可能是網路或來源限制。</string>
-    <string name="offline_too_many">這個範圍要下載 %1$d 張圖磚，太多了。請先把地圖放大一點再試。</string>
-    <string name="cache_cleared">地圖快取已清除</string>
-    <string name="action_clear_cache">🧹 清除地圖快取</string>
 </resources>

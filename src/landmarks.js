@@ -150,6 +150,69 @@ const RAW = [
 ];
 
 
+
+// 國家/地區的英文名。資料檔存的是中文，英文語系與搜尋都靠這張表。
+const COUNTRY_EN = {
+  '台灣': 'Taiwan',
+  '日本': 'Japan',
+  '韓國': 'South Korea',
+  '中國': 'China',
+  '香港': 'Hong Kong',
+  '澳門': 'Macau',
+  '柬埔寨': 'Cambodia',
+  '泰國': 'Thailand',
+  '印尼': 'Indonesia',
+  '新加坡': 'Singapore',
+  '越南': 'Vietnam',
+  '馬來西亞': 'Malaysia',
+  '印度': 'India',
+  '尼泊爾': 'Nepal',
+  '約旦': 'Jordan',
+  '以色列': 'Israel',
+  '阿聯': 'UAE',
+  '伊朗': 'Iran',
+  '土耳其': 'Türkiye',
+  '法國': 'France',
+  '英國': 'United Kingdom',
+  '愛爾蘭': 'Ireland',
+  '義大利': 'Italy',
+  '梵蒂岡': 'Vatican City',
+  '西班牙': 'Spain',
+  '葡萄牙': 'Portugal',
+  '德國': 'Germany',
+  '捷克': 'Czechia',
+  '奧地利': 'Austria',
+  '瑞士': 'Switzerland',
+  '荷蘭': 'Netherlands',
+  '匈牙利': 'Hungary',
+  '俄羅斯': 'Russia',
+  '希臘': 'Greece',
+  '冰島': 'Iceland',
+  '挪威': 'Norway',
+  '埃及': 'Egypt',
+  '摩洛哥': 'Morocco',
+  '辛巴威': 'Zimbabwe',
+  '坦尚尼亞': 'Tanzania',
+  '南非': 'South Africa',
+  '馬達加斯加': 'Madagascar',
+  '納米比亞': 'Namibia',
+  '美國': 'United States',
+  '加拿大': 'Canada',
+  '墨西哥': 'Mexico',
+  '古巴': 'Cuba',
+  '秘魯': 'Peru',
+  '巴西': 'Brazil',
+  '玻利維亞': 'Bolivia',
+  '智利': 'Chile',
+  '厄瓜多': 'Ecuador',
+  '阿根廷': 'Argentina',
+  '澳洲': 'Australia',
+  '紐西蘭': 'New Zealand',
+  '法屬玻里尼西亞': 'French Polynesia',
+  '斐濟': 'Fiji',
+  '南極': 'Antarctica',
+};
+
 // 每個地標的介紹。與名稱一樣，中文語系顯示 zh、其他語系顯示 en。
 const DESC = {
   'tw-101': ['508 公尺，2004 至 2010 年間的世界第一高樓。外型取自竹節，樓頂懸著一顆 660 噸的調諧質量阻尼器抵抗颱風與地震。',
@@ -402,7 +465,7 @@ const DESC = {
 
 export const LANDMARKS = RAW.map(([id, zh, en, lat, lng, country, continent, icon]) =>
   ({ id, zh, en, lat, lng, country, continent, icon,
-     descZh: DESC[id][0], descEn: DESC[id][1] }));
+     countryEn: COUNTRY_EN[country], descZh: DESC[id][0], descEn: DESC[id][1] }));
 
 export const LANDMARKS_BY_ID = new Map(LANDMARKS.map((l) => [l.id, l]));
 

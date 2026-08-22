@@ -78,9 +78,26 @@
     <button class="sheet-close" data-close>✕</button>
   </div>
   <div class="sheet-body">
+    <input class="search" id="passSearch" type="search" placeholder="搜尋地標、國家" autocomplete="off">
+    <div class="filters" id="passFilters">
+      <button class="chip on" data-filter="all">全部</button>
+      <button class="chip" data-filter="visited">已蓋章</button>
+      <button class="chip" data-filter="unvisited">未蓋章</button>
+      <button class="chip" data-filter="wish">想去</button>
+    </div>
     <div class="nearest" id="nearestBox" hidden></div>
     <div id="passList"></div>
   </div>
+</section>
+
+<!-- ── 面板：地標詳情 ───────────────────────────────────── -->
+<section class="sheet" id="sheetLandmark" hidden>
+  <div class="sheet-head">
+    <h2 id="lmTitle">地標</h2>
+    <div class="sheet-sub" id="lmSub"></div>
+    <button class="sheet-close" data-close>✕</button>
+  </div>
+  <div class="sheet-body" id="lmBody"></div>
 </section>
 
 <!-- ── 面板：設定 ───────────────────────────────────────── -->

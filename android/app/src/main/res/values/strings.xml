@@ -226,4 +226,5 @@
     <string name="set_nearby_sub">走到還沒蓋章的地標 2 公里內就通知</string>
     <string name="nearby_title">附近有還沒蓋章的地標</string>
     <string name="nearby_sub">%1$s · 往%2$s方 %3$s</string>
+    <string name="lm_distance_here">你就在這裡</string>
 </resources>

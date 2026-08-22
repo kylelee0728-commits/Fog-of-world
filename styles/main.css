@@ -1,4 +1,4 @@
-/* 世界迷霧 — 戰後迷霧風格 UI */
+/* 拾光者 — 長夜與燈火風格 UI */
 :root {
   --bg: #0b0f14;
   --panel: rgba(16, 22, 30, 0.92);
@@ -231,6 +231,44 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 
 .fineprint { font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 16px; }
 
+/* ── 護照的搜尋與篩選 ───────────────────────────────── */
+.search {
+  width: 100%; box-sizing: border-box; font: inherit; font-size: 13px;
+  padding: 10px 12px; margin-bottom: 8px;
+  border-radius: 12px; border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05); color: var(--text);
+}
+.search::placeholder { color: var(--muted); }
+.search:focus { outline: none; border-color: rgba(245, 200, 107, 0.5); }
+
+.filters { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.chip {
+  appearance: none; cursor: pointer; font: inherit; font-size: 12px;
+  padding: 6px 10px; border-radius: 10px;
+  border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); color: var(--muted);
+}
+.chip.on {
+  background: rgba(245, 200, 107, 0.16); border-color: rgba(245, 200, 107, 0.5);
+  color: var(--accent); font-weight: 700;
+}
+.empty { padding: 40px 0; text-align: center; font-size: 13px; color: var(--muted); }
+.lm-dist .wish { color: var(--accent-2); margin-right: 5px; }
+
+/* ── 地標詳情 ───────────────────────────────────────── */
+.lm-status {
+  display: flex; align-items: center; gap: 9px;
+  padding: 12px; border-radius: 12px; font-size: 12px; color: var(--muted);
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line);
+}
+.lm-status .ic { color: var(--muted); }
+.lm-status.done {
+  background: rgba(245, 200, 107, 0.08); border-color: rgba(245, 200, 107, 0.4); color: var(--text);
+}
+.lm-status.done .ic { color: var(--accent); }
+.lm-where { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.lm-h { margin: 18px 0 6px; font-size: 13px; color: var(--text); }
+.lm-desc { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.75; }
+
 /* ── 開場 ───────────────────────────────────────────── */
 .intro {
   position: absolute; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 24px;
@@ -273,6 +311,7 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 }
 .lm-marker { font-size: 20px; text-align: center; line-height: 1; color: var(--accent); filter: drop-shadow(0 2px 3px #000); }
 .lm-marker.dim { opacity: 0.55; }
+.lm-marker.wish { color: var(--accent-2); }
 
 @media (min-width: 720px) {
   .topbar { max-width: 460px; }

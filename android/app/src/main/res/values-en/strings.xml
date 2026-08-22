@@ -226,4 +226,5 @@
     <string name="set_nearby_sub">Notify within 2 km of a landmark you have not stamped</string>
     <string name="nearby_title">An unstamped landmark is nearby</string>
     <string name="nearby_sub">%1$s · %3$s to the %2$s</string>
+    <string name="lm_distance_here">You are here</string>
 </resources>

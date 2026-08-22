@@ -5,7 +5,8 @@ import { fogLayer } from './fogLayer.js';
 import { Tracker } from './tracker.js';
 import { LANDMARKS } from './landmarks.js';
 import { loadSettings, saveSettings, clearSave } from './storage.js';
-import { renderStats, renderAchievements, renderPassport, toast, setGps, openSheet, closeSheets } from './ui.js';
+import { renderStats, renderAchievements, renderPassport, renderLandmark,
+  setPassportQuery, setPassportFilter, toast, setGps, openSheet, closeSheets } from './ui.js';
 import { formatDistance } from './util.js';
 import { icon, landmarkIcon, landmarkIconName } from './icons.js';
 
@@ -55,14 +56,20 @@ for (const lm of LANDMARKS) {
     icon: L.divIcon({ className: '', html: `<div class="lm-marker dim">${landmarkIcon(lm.icon)}</div>`, iconSize: [20, 20] }),
     keyboard: false,
   }).bindTooltip(`${lm.zh}<br><small>${lm.country}</small>`, { direction: 'top' });
+  m.on('click', () => openLandmark(lm));
   m.addTo(map);
   lmMarkers.set(lm.id, m);
 }
 function refreshLandmarkMarkers() {
+  const wish = new Set(state.data.wishlist || []);
   for (const lm of LANDMARKS) {
     const visited = !!state.data.landmarks[lm.id];
     const el = lmMarkers.get(lm.id).getElement();
-    if (el) el.firstChild.className = 'lm-marker' + (visited ? '' : ' dim');
+    // 去過的亮、想去的用冷光標出來、其餘的壓暗
+    if (el) {
+      el.firstChild.className = 'lm-marker'
+        + (visited ? '' : (wish.has(lm.id) ? ' wish' : ' dim'));
+    }
   }
 }
 map.whenReady(refreshLandmarkMarkers);
@@ -136,7 +143,7 @@ state.addEventListener('landmarks', (e) => {
     toast({ icon: 'passport', title: `另外蓋了 ${list.length - 2} 個地標的章`, sub: '到「護照」看看', gold: true });
   }
   refreshLandmarkMarkers();
-  if (!$('sheetPassport').hidden) renderPassport(state, lastPos, flyToLandmark);
+  if (!$('sheetPassport').hidden) renderPassport(state, lastPos, openLandmark);
 });
 
 // ── 探索開關 ─────────────────────────────────────────
@@ -184,16 +191,46 @@ $('btnLocate').onclick = () => {
 };
 
 $('btnAchievements').onclick = () => { renderAchievements(state); openSheet('sheetAchievements'); };
-$('btnPassport').onclick = () => { renderPassport(state, lastPos, flyToLandmark); openSheet('sheetPassport'); };
+$('btnPassport').onclick = () => { renderPassport(state, lastPos, openLandmark); openSheet('sheetPassport'); };
 $('btnSettings').onclick = () => openSheet('sheetSettings');
 for (const b of document.querySelectorAll('[data-close]')) b.onclick = closeSheets;
 
-function flyToLandmark(lm) {
+/** 點護照上的地標：開詳情，而不是直接跳地圖 */
+function openLandmark(lm) {
   if (!lm) return;
-  closeSheets();
-  map.flyTo([lm.lat, lm.lng], 13, { duration: 1.6 });
-  toast({ icon: landmarkIconName(lm.icon), title: lm.zh, sub: state.data.landmarks[lm.id] ? '已蓋章 · 光看不算數，走過才是你的' : '還沒去過 —— 這裡還是暗的' });
+  const handlers = {
+    onShowOnMap: (l) => {
+      closeSheets();
+      map.flyTo([l.lat, l.lng], 13, { duration: 1.6 });
+    },
+    onToggleWish: (l) => {
+      const added = state.toggleWish(l.id);
+      toast({
+        icon: 'flame',
+        title: added ? '已加入想去' : '已從想去移除',
+        sub: l.zh,
+      });
+      // 重畫詳情讓按鈕文字跟著換，地圖與護照上的標記也要更新
+      renderLandmark(state, l, lastPos, handlers);
+      refreshLandmarkMarkers();
+    },
+  };
+  renderLandmark(state, lm, lastPos, handlers);
+  openSheet('sheetLandmark');
 }
+
+// ── 護照的搜尋與篩選 ─────────────────────────────────
+$('passSearch').oninput = (e) => {
+  setPassportQuery(e.target.value);
+  renderPassport(state, lastPos, openLandmark);
+};
+$('passFilters').onclick = (e) => {
+  const b = e.target.closest('[data-filter]');
+  if (!b) return;
+  for (const c of $('passFilters').children) c.classList.toggle('on', c === b);
+  setPassportFilter(b.dataset.filter);
+  renderPassport(state, lastPos, openLandmark);
+};
 
 // ── 設定 ─────────────────────────────────────────────
 function bindRange(id, outId, key, fmt, apply) {

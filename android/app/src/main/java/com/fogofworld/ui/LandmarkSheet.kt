@@ -52,7 +52,7 @@ fun LandmarkSheet(
     SheetScaffold(
         landmark.icon,
         Format.landmarkName(context, landmark),
-        "${landmark.country} · ${Format.continent(context, landmark.continent)}",
+        "${Format.country(context, landmark)} · ${Format.continent(context, landmark.continent)}",
         onDismiss,
     ) {
         Column(Modifier.fillMaxWidth()) {
@@ -89,15 +89,17 @@ fun LandmarkSheet(
             Spacer(Modifier.height(8.dp))
 
             // 距離與方位
+            val away = here?.let { Grid.distanceM(it.lat, it.lng, landmark.lat, landmark.lng) }
             Text(
-                if (here != null) {
-                    stringResource(
+                when {
+                    away == null -> stringResource(R.string.lm_no_fix)
+                    // 站在原地時方位是雜訊，不如不說
+                    away < 50 -> stringResource(R.string.lm_distance_here)
+                    else -> stringResource(
                         R.string.lm_distance_away,
-                        Format.distance(context, Grid.distanceM(here.lat, here.lng, landmark.lat, landmark.lng)),
-                        Format.compass(context, Grid.bearing(here.lat, here.lng, landmark.lat, landmark.lng)),
+                        Format.distance(context, away),
+                        Format.compass(context, Grid.bearing(here!!.lat, here.lng, landmark.lat, landmark.lng)),
                     )
-                } else {
-                    stringResource(R.string.lm_no_fix)
                 },
                 fontSize = 12.sp, color = FogMuted,
             )

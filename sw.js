@@ -1,5 +1,5 @@
 // 離線快取：程式碼走 cache-first，地圖圖磚走 stale-while-revalidate
-const VERSION = 'fow-v2';
+const VERSION = 'fow-v3';
 const SHELL = [
   './',
   './index.html',

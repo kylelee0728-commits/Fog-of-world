@@ -192,7 +192,8 @@ fun PassportSheet(
             val matchQuery = q.isEmpty() ||
                 lm.zh.lowercase().contains(q) ||
                 lm.en.lowercase().contains(q) ||
-                lm.country.lowercase().contains(q)
+                lm.country.lowercase().contains(q) ||
+                lm.countryEn.lowercase().contains(q)
             val matchFilter = when (filter) {
                 PassportFilter.ALL -> true
                 PassportFilter.VISITED -> lm.id in visited
@@ -337,7 +338,7 @@ fun PassportSheet(
                                     fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = FogText,
                                 )
                                 Text(
-                                    "${lm.country} · ${Format.landmarkSecondary(context, lm)}",
+                                    "${Format.country(context, lm)} · ${Format.landmarkSecondary(context, lm)}",
                                     fontSize = 11.sp, color = FogMuted,
                                 )
                             }

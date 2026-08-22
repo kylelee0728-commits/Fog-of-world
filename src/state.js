@@ -168,6 +168,21 @@ export class GameState extends EventTarget {
     };
   }
 
+  /** 想去清單：只存 id，切換後回傳切換後的狀態 */
+  isWished(id) {
+    return (this.data.wishlist || []).includes(id);
+  }
+
+  toggleWish(id) {
+    if (!Array.isArray(this.data.wishlist)) this.data.wishlist = [];
+    const i = this.data.wishlist.indexOf(id);
+    if (i >= 0) this.data.wishlist.splice(i, 1);
+    else this.data.wishlist.push(id);
+    this.dirty = true;
+    this.flush();
+    return i < 0;
+  }
+
   export() {
     this.flush();
     return JSON.stringify({ ...this.data, cells: pack(this.cells), blocks: pack(this.blocks) });

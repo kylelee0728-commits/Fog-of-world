@@ -129,6 +129,12 @@ object Format {
         return if (lang == "zh") landmark.en else landmark.zh
     }
 
+    /** 國家/地區：資料檔存的是中文，非中文語系顯示英文名 */
+    fun country(context: Context, landmark: Landmark): String {
+        val lang = Locale.getDefault().language
+        return if (lang == "zh") landmark.country else landmark.countryEn
+    }
+
     /** 地標介紹：跟名稱走同一套語系規則 */
     fun landmarkDesc(context: Context, landmark: Landmark): String {
         val lang = Locale.getDefault().language

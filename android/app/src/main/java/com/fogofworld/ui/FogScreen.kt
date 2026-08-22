@@ -137,7 +137,7 @@ fun FogScreen(
                             Toast(
                                 System.nanoTime(), it.icon,
                                 context.getString(R.string.toast_stamp, Format.landmarkName(context, it)),
-                                "${it.country} · ${Format.continent(context, it.continent)}",
+                                "${Format.country(context, it)} · ${Format.continent(context, it.continent)}",
                             )
                         )
                     }

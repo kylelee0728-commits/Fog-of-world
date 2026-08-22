@@ -226,4 +226,5 @@
     <string name="set_nearby_sub">未訪問のランドマークの 2 km 以内に入ったら知らせる</string>
     <string name="nearby_title">近くに未訪問のランドマークがあります</string>
     <string name="nearby_sub">%1$s · %2$sの方向 %3$s</string>
+    <string name="lm_distance_here">いま、ここにいます</string>
 </resources>

@@ -37,6 +37,7 @@ export function emptySave() {
     days: {},         // { 'YYYY-MM-DD': 當日公尺數 }
     landmarks: {},    // { landmarkId: 造訪時間 }
     achievements: {}, // { achievementId: 解鎖時間 }
+    wishlist: [],     // 想去清單，只存 landmarkId
     maxAltitude: 0,
     nightWalk: 0,
     dawnWalk: 0,

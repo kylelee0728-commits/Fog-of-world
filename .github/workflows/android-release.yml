@@ -111,6 +111,13 @@ jobs:
           cp "$APK" "fog-of-world-$VERSION.apk"
           ls -lh "fog-of-world-$VERSION.apk"
 
+      - name: 上傳 APK 成品
+        uses: actions/upload-artifact@v4
+        with:
+          name: fog-of-world-release-apk
+          path: fog-of-world-*.apk
+          if-no-files-found: error
+
       - name: 發佈 Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -147,15 +154,14 @@ jobs:
           EOF
           )
           gh release delete "$TAG" --yes --cleanup-tag || true
-          gh release create "$TAG" "fog-of-world-$VERSION.apk" \
+          # 403 幾乎都是同一個原因：儲存庫的 Actions 權限被設成唯讀，
+          # workflow 裡寫 permissions: contents: write 也蓋不過去。
+          if ! gh release create "$TAG" "fog-of-world-$VERSION.apk" \
             --target "$(git rev-parse HEAD)" \
             --title "拾光者 $VERSION" \
-            --notes "$NOTES"
+            --notes "$NOTES"; then
+            echo "::error::建立 Release 失敗。若訊息是 HTTP 403，請到 Settings → Actions → General → Workflow permissions 選「Read and write permissions」後重跑。APK 已上傳為本次執行的成品。"
+            exit 1
+          fi
           gh release view "$TAG" --json tagName,assets \
             --jq '"已發佈 \(.tagName)：\(.assets[].name)（\(.assets[].size) bytes）"'
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: fog-of-world-release-apk
-          path: fog-of-world-*.apk
-          if-no-files-found: error

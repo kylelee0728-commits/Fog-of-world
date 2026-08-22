@@ -204,4 +204,26 @@
     <string name="ach_cells_1000_desc">1000マスを照らす</string>
     <string name="ach_cells_10000_name">長夜の終わり</string>
     <string name="ach_cells_10000_desc">10000マスを照らす</string>
+    <string name="sheet_landmark">ランドマーク</string>
+    <string name="lm_intro">この場所について</string>
+    <string name="lm_show_on_map">地図で見る</string>
+    <string name="lm_wish_add">行きたいに追加</string>
+    <string name="lm_wish_remove">行きたいから外す</string>
+    <string name="lm_wished">行きたいリストに登録済み</string>
+    <string name="lm_visited">スタンプ済み · %1$s</string>
+    <string name="lm_not_visited">未訪問 —— 1 km 以内に入ると自動でスタンプされます</string>
+    <string name="lm_distance_away">現在地から %1$s · %2$sの方向</string>
+    <string name="lm_no_fix">測位前のため距離を計算できません</string>
+    <string name="toast_wish_added">行きたいに追加しました</string>
+    <string name="toast_wish_removed">行きたいから外しました</string>
+    <string name="passport_search">ランドマーク・国名で検索</string>
+    <string name="passport_empty">該当するランドマークがありません</string>
+    <string name="filter_all">すべて</string>
+    <string name="filter_visited">スタンプ済み</string>
+    <string name="filter_unvisited">未訪問</string>
+    <string name="filter_wish">行きたい</string>
+    <string name="set_nearby">近くのランドマークを通知</string>
+    <string name="set_nearby_sub">未訪問のランドマークの 2 km 以内に入ったら知らせる</string>
+    <string name="nearby_title">近くに未訪問のランドマークがあります</string>
+    <string name="nearby_sub">%1$s · %2$sの方向 %3$s</string>
 </resources>

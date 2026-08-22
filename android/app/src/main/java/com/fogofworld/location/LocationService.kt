@@ -27,6 +27,9 @@ import com.fogofworld.data.Format
 import com.fogofworld.data.LocaleHelper
 import com.fogofworld.data.FogStore
 import com.fogofworld.data.Ranks
+import com.fogofworld.data.Grid
+import com.fogofworld.data.Landmark
+import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Settings
 
 /**
@@ -42,6 +45,11 @@ class LocationService : Service(), LocationListener {
         const val ACTION_STOP = "com.fogofworld.STOP"
         private const val CHANNEL_ID = "walking"
         private const val NOTIFICATION_ID = 1001
+
+        /** 走進這個距離內就提醒還沒蓋章的地標（蓋章半徑是 1 公里） */
+        private const val NEARBY_ALERT_M = 2_000.0
+        /** 每次最多檢查一輪，太頻繁沒有意義也費電 */
+        private const val NEARBY_CHECK_MS = 20_000L
 
         @Volatile
         var isRunning: Boolean = false
@@ -60,6 +68,9 @@ class LocationService : Service(), LocationListener {
     private lateinit var locationManager: LocationManager
     private var wakeLock: PowerManager.WakeLock? = null
     private var lastNotified = 0L
+    private var lastNearbyCheck = 0L
+    /** 這次記錄期間已經提醒過的地標，停止記錄時清空 */
+    private val nearbyNotified = HashSet<String>()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -137,6 +148,7 @@ class LocationService : Service(), LocationListener {
             wakeLock = null
             isRunning = false
         }
+        nearbyNotified.clear()
         FogStore.flush(force = true)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -168,6 +180,7 @@ class LocationService : Service(), LocationListener {
         )
 
         checkDailyGoal()
+        checkNearbyLandmark()
 
         val now = System.currentTimeMillis()
         if (now - lastNotified > 10_000) {
@@ -176,6 +189,58 @@ class LocationService : Service(), LocationListener {
         }
         if (now % 30_000 < 3_000) FogStore.flush()
     }
+
+    /**
+     * 走近還沒蓋章的地標時提醒一次。
+     *
+     * 同一個地標在這次記錄期間只提醒一次 —— 站在原地不動也不會一直跳通知；
+     * 重新開始探索才會重置。
+     */
+    private fun checkNearbyLandmark() {
+        if (!Settings.nearbyAlert(this)) return
+        val now = System.currentTimeMillis()
+        if (now - lastNearbyCheck < NEARBY_CHECK_MS) return
+        lastNearbyCheck = now
+
+        val fix = FogStore.lastFix ?: return
+        val visited = FogStore.visitedLandmarkIds()
+        var best: Landmark? = null
+        var bestDist = NEARBY_ALERT_M
+        for (lm in Landmarks.all(this)) {
+            if (lm.id in visited || lm.id in nearbyNotified) continue
+            val d = Grid.distanceM(fix.lat, fix.lng, lm.lat, lm.lng)
+            if (d < bestDist) { best = lm; bestDist = d }
+        }
+        val lm = best ?: return
+        nearbyNotified.add(lm.id)
+        notifyNearby(lm, bestDist, Grid.bearing(fix.lat, fix.lng, lm.lat, lm.lng))
+    }
+
+    private fun notifyNearby(landmark: Landmark, distance: Double, bearing: Double) {
+        if (!canPostNotifications()) return
+        val n = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_fog_notification)
+            .setContentTitle(getString(R.string.nearby_title))
+            .setContentText(
+                getString(
+                    R.string.nearby_sub,
+                    Format.landmarkName(this, landmark),
+                    Format.compass(this, bearing),
+                    Format.distance(this, distance),
+                )
+            )
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+        runCatching {
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(1003, n)
+        }
+    }
+
+    private fun canPostNotifications(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
 
     /** 走到當日目標時提醒一次，同一天不重複 */
     private fun checkDailyGoal() {
@@ -189,10 +254,7 @@ class LocationService : Service(), LocationListener {
     }
 
     private fun notifyGoalReached() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED
-        ) return
+        if (!canPostNotifications()) return
         val n = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_fog_notification)
             .setContentTitle(getString(R.string.goal_reached))

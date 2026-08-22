@@ -128,4 +128,10 @@ object Format {
         val lang = Locale.getDefault().language
         return if (lang == "zh") landmark.en else landmark.zh
     }
+
+    /** 地標介紹：跟名稱走同一套語系規則 */
+    fun landmarkDesc(context: Context, landmark: Landmark): String {
+        val lang = Locale.getDefault().language
+        return if (lang == "zh") landmark.descZh else landmark.descEn
+    }
 }

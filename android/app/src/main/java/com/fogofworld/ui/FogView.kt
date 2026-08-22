@@ -46,6 +46,13 @@ interface FogProjection {
 @SuppressLint("ViewConstructor")
 class FogView(context: Context, private val source: () -> FogProjection?) : View(context) {
 
+    private companion object {
+        /** 走過與一般地標的暖光 */
+        val LIGHT_COLOR = Color.rgb(0xF5, 0xC8, 0x6B)
+        /** 想去清單的冷光，與已蓋章的區分開 */
+        val WISH_COLOR = Color.rgb(0x5F, 0xD0, 0xC5)
+    }
+
     var radiusM: Double = 60.0
         set(value) {
             field = value
@@ -80,10 +87,10 @@ class FogView(context: Context, private val source: () -> FogProjection?) : View
     /** 地標圖示的邊長（像素）；用螢幕密度換算，各種機型上大小才一致 */
     private val iconSize = (22 * context.resources.displayMetrics.density).roundToInt()
 
-    /** drawable id → 已上色的點陣圖。地標只有八種分類，快取起來一次就夠 */
-    private val iconCache = HashMap<Int, Bitmap>()
+    /** (drawable id, 顏色) → 已上色的點陣圖。地標只有八種分類、兩種顏色，快取起來一次就夠 */
+    private val iconCache = HashMap<Long, Bitmap>()
 
-    private val playerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0xF5, 0xC8, 0x6B) }
+    private val playerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = LIGHT_COLOR }
 
     private val playerRingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.rgb(0x10, 0x16, 0x1F)
@@ -177,6 +184,7 @@ class FogView(context: Context, private val source: () -> FogProjection?) : View
         east: Double,
     ) {
         val visited = FogStore.visitedLandmarkIds()
+        val wished = FogStore.wishedLandmarkIds()
         for (lm in com.fogofworld.data.Landmarks.all(context)) {
             if (lm.lat < south || lm.lat > north) continue
             if (lm.lng < west || lm.lng > east) continue
@@ -184,8 +192,10 @@ class FogView(context: Context, private val source: () -> FogProjection?) : View
             val x = reuse.x.toFloat()
             val y = reuse.y.toFloat()
             if (x < 0 || y < 0 || x > width || y > height) continue
-            val icon = iconBitmap(lm.icon)
-            iconPaint.alpha = if (visited.containsKey(lm.id)) 255 else 110
+            // 去過的亮、想去的用冷光標出來、其餘的壓暗
+            val done = visited.containsKey(lm.id)
+            val icon = iconBitmap(lm.icon, if (!done && lm.id in wished) WISH_COLOR else LIGHT_COLOR)
+            iconPaint.alpha = if (done || lm.id in wished) 255 else 110
             canvas.drawBitmap(icon, x - icon.width / 2f, y - icon.height / 2f, iconPaint)
         }
     }
@@ -238,15 +248,18 @@ class FogView(context: Context, private val source: () -> FogProjection?) : View
     }
 
     /** 把向量圖示畫成指定顏色的點陣圖，之後每一幀直接貼上 */
-    private fun iconBitmap(@DrawableRes id: Int): Bitmap = iconCache.getOrPut(id) {
-        val drawable = requireNotNull(ContextCompat.getDrawable(context, id)) {
-            "找不到地標圖示 drawable"
-        }.mutate()
-        drawable.setTint(Color.rgb(0xF5, 0xC8, 0x6B))
-        val bmp = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
-        drawable.setBounds(0, 0, iconSize, iconSize)
-        drawable.draw(Canvas(bmp))
-        bmp
+    private fun iconBitmap(@DrawableRes id: Int, tint: Int): Bitmap {
+        val key = (id.toLong() shl 32) or (tint.toLong() and 0xFFFFFFFFL)
+        return iconCache.getOrPut(key) {
+            val drawable = requireNotNull(ContextCompat.getDrawable(context, id)) {
+                "找不到地標圖示 drawable"
+            }.mutate()
+            drawable.setTint(tint)
+            val bmp = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
+            drawable.setBounds(0, 0, iconSize, iconSize)
+            drawable.draw(Canvas(bmp))
+            bmp
+        }
     }
 
     /** 依半徑快取一支柔邊筆刷 */

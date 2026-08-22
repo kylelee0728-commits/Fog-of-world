@@ -204,4 +204,26 @@
     <string name="ach_cells_1000_desc">Light 1000 cells</string>
     <string name="ach_cells_10000_name">End of the Long Night</string>
     <string name="ach_cells_10000_desc">Light 10000 cells</string>
+    <string name="sheet_landmark">Landmark</string>
+    <string name="lm_intro">About this place</string>
+    <string name="lm_show_on_map">Show on map</string>
+    <string name="lm_wish_add">Add to wishlist</string>
+    <string name="lm_wish_remove">Remove from wishlist</string>
+    <string name="lm_wished">On your wishlist</string>
+    <string name="lm_visited">Stamped · %1$s</string>
+    <string name="lm_not_visited">Not yet visited — walk within 1 km to stamp it</string>
+    <string name="lm_distance_away">%1$s away · to the %2$s</string>
+    <string name="lm_no_fix">No fix yet, so no distance</string>
+    <string name="toast_wish_added">Added to wishlist</string>
+    <string name="toast_wish_removed">Removed from wishlist</string>
+    <string name="passport_search">Search landmarks, countries</string>
+    <string name="passport_empty">No landmarks match</string>
+    <string name="filter_all">All</string>
+    <string name="filter_visited">Stamped</string>
+    <string name="filter_unvisited">Not yet</string>
+    <string name="filter_wish">Wishlist</string>
+    <string name="set_nearby">Nearby landmark alerts</string>
+    <string name="set_nearby_sub">Notify within 2 km of a landmark you have not stamped</string>
+    <string name="nearby_title">An unstamped landmark is nearby</string>
+    <string name="nearby_sub">%1$s · %3$s to the %2$s</string>
 </resources>

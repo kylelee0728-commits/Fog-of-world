@@ -1,6 +1,7 @@
 package com.fogofworld.ui
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -157,13 +161,47 @@ fun AchievementSheet(stats: Stats, onDismiss: () -> Unit) {
 
 // ── 世界護照 ───────────────────────────────────────────
 
+/** 護照的篩選條件 */
+private enum class PassportFilter(@StringRes val label: Int) {
+    ALL(R.string.filter_all),
+    VISITED(R.string.filter_visited),
+    UNVISITED(R.string.filter_unvisited),
+    WISH(R.string.filter_wish),
+}
+
 @Composable
-fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
+fun PassportSheet(
+    wishTick: Int,
+    onPick: (Landmark) -> Unit,
+    onDismiss: () -> Unit,
+) {
     val context = LocalContext.current
     val all = Landmarks.all(context)
     val visited = FogStore.visitedLandmarkIds()
+    val wished = remember(wishTick) { FogStore.wishedLandmarkIds().toSet() }
     val here = FogStore.lastFix
     val continents = visited.keys.mapNotNull { id -> all.firstOrNull { it.id == id }?.continent }.toSet()
+
+    var query by remember { mutableStateOf("") }
+    var filter by remember { mutableStateOf(PassportFilter.ALL) }
+
+    // 搜尋比對中文名、英文名與國家，讓使用者用哪一種語言都找得到
+    val shown = remember(query, filter, wishTick, visited.size) {
+        val q = query.trim().lowercase()
+        all.filter { lm ->
+            val matchQuery = q.isEmpty() ||
+                lm.zh.lowercase().contains(q) ||
+                lm.en.lowercase().contains(q) ||
+                lm.country.lowercase().contains(q)
+            val matchFilter = when (filter) {
+                PassportFilter.ALL -> true
+                PassportFilter.VISITED -> lm.id in visited
+                PassportFilter.UNVISITED -> lm.id !in visited
+                PassportFilter.WISH -> lm.id in wished
+            }
+            matchQuery && matchFilter
+        }
+    }
 
     SheetScaffold(
         R.drawable.ic_passport,
@@ -171,6 +209,46 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
         stringResource(R.string.sheet_passport_sub, visited.size, all.size, continents.size),
         onDismiss,
     ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            placeholder = { Text(stringResource(R.string.passport_search), fontSize = 13.sp, color = FogMuted) },
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp, color = FogText),
+            leadingIcon = { FogIcon(R.drawable.ic_target, size = 16.dp, tint = FogMuted) },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    TextButton(onClick = { query = "" }) {
+                        Text("\u00d7", fontSize = 18.sp, color = FogMuted)
+                    }
+                }
+            },
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = FogAccent.copy(alpha = 0.5f),
+                unfocusedBorderColor = FogLine,
+                cursorColor = FogAccent,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(8.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            PassportFilter.entries.forEach { f ->
+                FilterChip(stringResource(f.label), f == filter) { filter = f }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+
+        if (shown.isEmpty()) {
+            Text(
+                stringResource(R.string.passport_empty),
+                fontSize = 13.sp, color = FogMuted,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                textAlign = TextAlign.Center,
+            )
+        }
+
         // 最近的未造訪地標：距離與方位都先算好，避免在 lambda 裡再處理可空的定位
         val nearest: Triple<Landmark, Double, String>? = here?.let { fix ->
             all.filter { it.id !in visited.keys }
@@ -188,7 +266,7 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier.height(520.dp),
         ) {
-            if (nearest != null) {
+            if (nearest != null && query.isEmpty() && filter == PassportFilter.ALL) {
                 item {
                     val (lm, dist, dir) = nearest
                     Surface(
@@ -216,7 +294,7 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
             }
 
             for (continent in Landmarks.CONTINENTS) {
-                val list = all.filter { it.continent == continent }
+                val list = shown.filter { it.continent == continent }
                 if (list.isEmpty()) continue
                 item(key = "head-$continent") {
                     Row(
@@ -263,6 +341,10 @@ fun PassportSheet(onPick: (Landmark) -> Unit, onDismiss: () -> Unit) {
                                     fontSize = 11.sp, color = FogMuted,
                                 )
                             }
+                            if (lm.id in wished && at == null) {
+                                FogIcon(R.drawable.ic_flame, size = 13.dp, tint = FogTeal)
+                                Spacer(Modifier.width(6.dp))
+                            }
                             Text(
                                 if (at != null) formatDate(at)
                                 else dist?.let { Format.distance(context, it) } ?: "",
@@ -286,6 +368,7 @@ fun SettingsSheet(
     interval: Int,
     follow: Boolean,
     autoUpdate: Boolean,
+    nearbyAlert: Boolean,
     imperial: Boolean,
     dailyGoalM: Int,
     language: AppLanguage,
@@ -297,6 +380,7 @@ fun SettingsSheet(
     onInterval: (Int) -> Unit,
     onFollow: (Boolean) -> Unit,
     onAutoUpdate: (Boolean) -> Unit,
+    onNearbyAlert: (Boolean) -> Unit,
     onImperial: (Boolean) -> Unit,
     onDailyGoal: (Int) -> Unit,
     onLanguage: (AppLanguage) -> Unit,
@@ -368,6 +452,10 @@ fun SettingsSheet(
 
             SwitchRow(
                 stringResource(R.string.set_follow), stringResource(R.string.set_follow_sub), follow, onFollow,
+            )
+            SwitchRow(
+                stringResource(R.string.set_nearby), stringResource(R.string.set_nearby_sub),
+                nearbyAlert, onNearbyAlert,
             )
             SwitchRow(
                 stringResource(R.string.set_autoupdate), stringResource(R.string.set_autoupdate_sub),
@@ -500,6 +588,26 @@ private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChang
 }
 
 /** 小按鈕：不用 Button，避免預設內距把文字擠掉 */
+/** 護照上方的篩選鈕：選中時填色 */
+@Composable
+private fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier.clickable(onClick = onClick),
+        color = if (selected) FogAccent.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.04f),
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, if (selected) FogAccent.copy(alpha = 0.5f) else FogLine),
+    ) {
+        Text(
+            label,
+            fontSize = 12.sp,
+            color = if (selected) FogAccent else FogMuted,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            maxLines = 1,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        )
+    }
+}
+
 @Composable
 private fun SmallAction(
     @DrawableRes icon: Int,

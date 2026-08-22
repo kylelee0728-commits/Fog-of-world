@@ -204,4 +204,26 @@
     <string name="ach_cells_1000_desc">點亮 1000 個光格</string>
     <string name="ach_cells_10000_name">長夜終結者</string>
     <string name="ach_cells_10000_desc">點亮 10000 個光格</string>
+    <string name="sheet_landmark">地標</string>
+    <string name="lm_intro">關於這裡</string>
+    <string name="lm_show_on_map">在地圖上看</string>
+    <string name="lm_wish_add">加入想去</string>
+    <string name="lm_wish_remove">從想去移除</string>
+    <string name="lm_wished">已列入想去</string>
+    <string name="lm_visited">已蓋章 · %1$s</string>
+    <string name="lm_not_visited">還沒去過 —— 走進 1 公里內就會自動蓋章</string>
+    <string name="lm_distance_away">距離你 %1$s · 往%2$s方</string>
+    <string name="lm_no_fix">還沒定位，無法計算距離</string>
+    <string name="toast_wish_added">已加入想去</string>
+    <string name="toast_wish_removed">已從想去移除</string>
+    <string name="passport_search">搜尋地標、國家</string>
+    <string name="passport_empty">沒有符合的地標</string>
+    <string name="filter_all">全部</string>
+    <string name="filter_visited">已蓋章</string>
+    <string name="filter_unvisited">未蓋章</string>
+    <string name="filter_wish">想去</string>
+    <string name="set_nearby">接近地標時提醒</string>
+    <string name="set_nearby_sub">走到還沒蓋章的地標 2 公里內就通知</string>
+    <string name="nearby_title">附近有還沒蓋章的地標</string>
+    <string name="nearby_sub">%1$s · 往%2$s方 %3$s</string>
 </resources>

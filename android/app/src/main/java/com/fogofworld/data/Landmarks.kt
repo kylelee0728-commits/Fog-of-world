@@ -14,6 +14,8 @@ data class Landmark(
     val continent: String,
     /** 手繪的分類圖示；資料檔存的是表情符號，讀進來就換成向量圖 */
     @DrawableRes val icon: Int,
+    val descZh: String,
+    val descEn: String,
 )
 
 object Landmarks {
@@ -46,6 +48,8 @@ object Landmarks {
                         country = o.getString("country"),
                         continent = o.getString("continent"),
                         icon = Icons.forLandmark(o.optString("icon")),
+                        descZh = o.optString("descZh"),
+                        descEn = o.optString("descEn"),
                     )
                 )
             }

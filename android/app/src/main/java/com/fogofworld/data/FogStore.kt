@@ -88,6 +88,8 @@ object FogStore {
     private var sessionM = 0.0
     private val days = HashMap<String, Double>()
     private val visitedLandmarks = HashMap<String, Long>()
+    /** 想去清單：只存 id，沒有時間 */
+    private val wishlist = LinkedHashSet<String>()
     private val unlockedAchievements = HashMap<String, Long>()
 
     var lastFix: Fix? = null; private set
@@ -254,6 +256,19 @@ object FogStore {
 
     fun visitedLandmarkIds(): Map<String, Long> = visitedLandmarks
 
+    fun wishedLandmarkIds(): Set<String> = wishlist
+
+    fun isWished(id: String): Boolean = id in wishlist
+
+    /** 切換想去狀態，回傳切換後是不是「想去」 */
+    @Synchronized
+    fun toggleWish(id: String): Boolean {
+        val added = if (id in wishlist) { wishlist.remove(id); false } else { wishlist.add(id); true }
+        dirty = true
+        flush(force = true)
+        return added
+    }
+
     fun unlockedAchievementIds(): Map<String, Long> = unlockedAchievements
 
     /** 每日里程（YYYY-MM-DD → 公尺），統計頁用 */
@@ -307,6 +322,8 @@ object FogStore {
         o.optJSONObject("landmarks")?.let { d -> d.keys().forEach { visitedLandmarks[it] = d.optLong(it) } }
         unlockedAchievements.clear()
         o.optJSONObject("achievements")?.let { d -> d.keys().forEach { unlockedAchievements[it] = d.optLong(it) } }
+        wishlist.clear()
+        o.optJSONArray("wishlist")?.let { a -> for (i in 0 until a.length()) wishlist.add(a.optString(i)) }
 
         o.optJSONObject("lastPos")?.let {
             lastFix = Fix(it.optDouble("lat"), it.optDouble("lng"), time = it.optLong("ts", System.currentTimeMillis()))
@@ -380,6 +397,7 @@ object FogStore {
         index.clear()
         days.clear()
         visitedLandmarks.clear()
+        wishlist.clear()
         unlockedAchievements.clear()
         distanceM = 0.0
         maxAltitude = 0.0
@@ -405,6 +423,7 @@ object FogStore {
         o.put("days", JSONObject().also { d -> days.forEach { (k, v) -> d.put(k, v) } })
         o.put("landmarks", JSONObject().also { d -> visitedLandmarks.forEach { (k, v) -> d.put(k, v) } })
         o.put("achievements", JSONObject().also { d -> unlockedAchievements.forEach { (k, v) -> d.put(k, v) } })
+        o.put("wishlist", org.json.JSONArray().also { a -> wishlist.forEach { a.put(it) } })
         lastFix?.let {
             o.put("lastLat", it.lat)
             o.put("lastLng", it.lng)
@@ -427,6 +446,9 @@ object FogStore {
             }
             o.optJSONObject("landmarks")?.let { d ->
                 d.keys().forEach { k -> visitedLandmarks[k] = d.optLong(k) }
+            }
+            o.optJSONArray("wishlist")?.let { a ->
+                for (i in 0 until a.length()) wishlist.add(a.optString(i))
             }
             o.optJSONObject("achievements")?.let { d ->
                 d.keys().forEach { k -> unlockedAchievements[k] = d.optLong(k) }

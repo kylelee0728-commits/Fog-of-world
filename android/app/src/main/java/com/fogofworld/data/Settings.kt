@@ -19,6 +19,7 @@ object Settings {
     private const val KEY_IMPERIAL = "imperial_units"
     private const val KEY_DAILY_GOAL = "daily_goal_m"
     private const val KEY_GOAL_DAY = "daily_goal_day"
+    private const val KEY_NEARBY = "nearby_alert"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -59,6 +60,10 @@ object Settings {
     /** 每日目標（公尺）；0 表示不設目標 */
     fun dailyGoal(context: Context): Int = prefs(context).getInt(KEY_DAILY_GOAL, 0)
     fun setDailyGoal(context: Context, v: Int) = prefs(context).edit { putInt(KEY_DAILY_GOAL, v) }
+
+    /** 走近還沒蓋章的地標時通知 */
+    fun nearbyAlert(context: Context): Boolean = prefs(context).getBoolean(KEY_NEARBY, true)
+    fun setNearbyAlert(context: Context, v: Boolean) = prefs(context).edit { putBoolean(KEY_NEARBY, v) }
 
     /** 記住哪一天已經通知過達標，避免同一天重複提示 */
     fun goalNotifiedDay(context: Context): String = prefs(context).getString(KEY_GOAL_DAY, "") ?: ""

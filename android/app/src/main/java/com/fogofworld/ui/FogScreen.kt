@@ -33,6 +33,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,6 +53,7 @@ import com.fogofworld.R
 import com.fogofworld.data.AppLanguage
 import com.fogofworld.data.FogStore
 import com.fogofworld.data.Format
+import com.fogofworld.data.Landmark
 import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Ranks
 import com.fogofworld.data.Settings
@@ -80,6 +82,9 @@ fun FogScreen(
     val stats by FogStore.stats.collectAsStateWithLifecycle()
     var sheet by remember { mutableStateOf(Sheet.NONE) }
     var showIntro by remember { mutableStateOf(!Settings.seenIntro(context)) }
+    // 點開的地標詳情；wishTick 只是為了讓護照在想去清單變動後重新排版
+    var detail by remember { mutableStateOf<Landmark?>(null) }
+    var wishTick by remember { mutableIntStateOf(0) }
     val toasts = remember { mutableStateListOf<Toast>() }
 
     var controller by remember { mutableStateOf<MapController?>(null) }
@@ -89,6 +94,7 @@ fun FogScreen(
     var accuracy by remember { mutableStateOf(Settings.accuracyLimit(context)) }
     var interval by remember { mutableStateOf(Settings.intervalSec(context)) }
     var autoUpdate by remember { mutableStateOf(Settings.autoUpdate(context)) }
+    var nearbyAlert by remember { mutableStateOf(Settings.nearbyAlert(context)) }
     var imperial by remember { mutableStateOf(Settings.imperial(context)) }
     var dailyGoal by remember { mutableStateOf(Settings.dailyGoal(context)) }
     val language = AppLanguage.fromTag(Settings.languageTag(context))
@@ -315,11 +321,8 @@ fun FogScreen(
         when (sheet) {
             Sheet.ACHIEVEMENTS -> AchievementSheet(stats) { sheet = Sheet.NONE }
             Sheet.PASSPORT -> PassportSheet(
-                onPick = { lm ->
-                    sheet = Sheet.NONE
-                    controller?.animateTo(lm.lat, lm.lng)
-                    controller?.setZoom(13.0)
-                },
+                wishTick = wishTick,
+                onPick = { detail = it },
                 onDismiss = { sheet = Sheet.NONE },
             )
 
@@ -330,6 +333,7 @@ fun FogScreen(
                 interval = interval,
                 follow = follow,
                 autoUpdate = autoUpdate,
+                nearbyAlert = nearbyAlert,
                 imperial = imperial,
                 dailyGoalM = dailyGoal,
                 language = language,
@@ -350,6 +354,7 @@ fun FogScreen(
                 onInterval = { interval = it; Settings.setIntervalSec(context, it) },
                 onFollow = { follow = it; Settings.setFollow(context, it) },
                 onAutoUpdate = { autoUpdate = it; Settings.setAutoUpdate(context, it) },
+                onNearbyAlert = { nearbyAlert = it; Settings.setNearbyAlert(context, it) },
                 onImperial = { imperial = it; Settings.setImperial(context, it) },
                 onDailyGoal = { dailyGoal = it; Settings.setDailyGoal(context, it) },
                 onLanguage = onLanguage,
@@ -374,6 +379,33 @@ fun FogScreen(
             )
 
             Sheet.NONE -> Unit
+        }
+
+        // ── 地標詳情 ────────────────────────────────
+        detail?.let { lm ->
+            LandmarkSheet(
+                landmark = lm,
+                onShowOnMap = {
+                    detail = null
+                    sheet = Sheet.NONE
+                    controller?.animateTo(lm.lat, lm.lng)
+                    controller?.setZoom(13.0)
+                },
+                onWishChanged = {
+                    wishTick++
+                    toasts.add(
+                        Toast(
+                            System.nanoTime(), R.drawable.ic_flame,
+                            context.getString(
+                                if (FogStore.isWished(lm.id)) R.string.toast_wish_added
+                                else R.string.toast_wish_removed
+                            ),
+                            Format.landmarkName(context, lm),
+                        )
+                    )
+                },
+                onDismiss = { detail = null },
+            )
         }
 
         // ── 更新 ────────────────────────────────────

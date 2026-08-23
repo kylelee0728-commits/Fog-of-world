@@ -161,6 +161,13 @@ fun AchievementSheet(stats: Stats, onDismiss: () -> Unit) {
 
 // ── 世界護照 ───────────────────────────────────────────
 
+/** 地圖樣式的顯示名稱，索引即 Settings.mapType 的值 */
+private val MAP_TYPE_LABELS = listOf(
+    R.string.maptype_night,
+    R.string.maptype_satellite,
+    R.string.maptype_terrain,
+)
+
 /** 護照的篩選條件 */
 private enum class PassportFilter(@StringRes val label: Int) {
     ALL(R.string.filter_all),
@@ -370,6 +377,7 @@ fun SettingsSheet(
     follow: Boolean,
     autoUpdate: Boolean,
     nearbyAlert: Boolean,
+    mapType: Int,
     imperial: Boolean,
     dailyGoalM: Int,
     language: AppLanguage,
@@ -382,6 +390,7 @@ fun SettingsSheet(
     onFollow: (Boolean) -> Unit,
     onAutoUpdate: (Boolean) -> Unit,
     onNearbyAlert: (Boolean) -> Unit,
+    onMapType: (Int) -> Unit,
     onImperial: (Boolean) -> Unit,
     onDailyGoal: (Int) -> Unit,
     onLanguage: (AppLanguage) -> Unit,
@@ -395,6 +404,7 @@ fun SettingsSheet(
     val context = LocalContext.current
     var confirmReset by remember { mutableStateOf(false) }
     var pickLanguage by remember { mutableStateOf(false) }
+    var pickMapType by remember { mutableStateOf(false) }
 
     SheetScaffold(
         R.drawable.ic_settings,
@@ -412,6 +422,11 @@ fun SettingsSheet(
                 stringResource(R.string.set_language),
                 if (language == AppLanguage.SYSTEM) stringResource(R.string.lang_system) else language.label,
             ) { pickLanguage = true }
+
+            ValueRow(
+                stringResource(R.string.set_maptype),
+                stringResource(MAP_TYPE_LABELS[mapType.coerceIn(0, MAP_TYPE_LABELS.lastIndex)]),
+            ) { pickMapType = true }
 
             SwitchRow(
                 stringResource(R.string.set_units),
@@ -509,6 +524,34 @@ fun SettingsSheet(
             Text(stringResource(R.string.privacy_note), fontSize = 11.sp, color = FogMuted, lineHeight = 18.sp)
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    if (pickMapType) {
+        AlertDialog(
+            onDismissRequest = { pickMapType = false },
+            containerColor = FogPanel,
+            title = { Text(stringResource(R.string.set_maptype), color = FogText) },
+            text = {
+                Column {
+                    MAP_TYPE_LABELS.forEachIndexed { i, label ->
+                        Text(
+                            (if (i == mapType) "● " else "○ ") + stringResource(label),
+                            color = if (i == mapType) FogAccent else FogText,
+                            fontSize = 15.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { pickMapType = false; onMapType(i) }
+                                .padding(vertical = 12.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { pickMapType = false }) {
+                    Text(stringResource(R.string.cancel), color = FogMuted)
+                }
+            },
+        )
     }
 
     if (pickLanguage) {

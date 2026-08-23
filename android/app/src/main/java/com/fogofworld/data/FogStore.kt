@@ -36,6 +36,22 @@ data class Stats(
     val achievementCount: Int = 0,
 )
 
+/**
+ * 一次外出的紀錄。開始探索時建立，停止時封存。
+ *
+ * 只記整段的統計，不記每一個座標點 —— 走過的地方本來就會留在網格裡，
+ * 再存一份完整軌跡只是讓存檔變大。
+ */
+data class Outing(
+    val startTime: Long,
+    val endTime: Long,
+    val distanceM: Double,
+    val cells: Int,
+    val landmarks: Int,
+) {
+    val durationMs: Long get() = (endTime - startTime).coerceAtLeast(0)
+}
+
 data class Fix(
     val lat: Double,
     val lng: Double,
@@ -86,10 +102,17 @@ object FogStore {
     private var dawnWalk = 0
     private var bestSessionM = 0.0
     private var sessionM = 0.0
+    private var sessionStartCells = 0
+    private var sessionStartLandmarks = 0
     private val days = HashMap<String, Double>()
     private val visitedLandmarks = HashMap<String, Long>()
     /** 想去清單：只存 id，沒有時間 */
     private val wishlist = LinkedHashSet<String>()
+
+    /** 已封存的外出紀錄，新的在後面 */
+    private val outings = ArrayList<Outing>()
+    /** 進行中的那一次；App 被系統收掉時它還在存檔裡，下次載入會補封存 */
+    private var openOuting: Outing? = null
     private val unlockedAchievements = HashMap<String, Long>()
 
     var lastFix: Fix? = null; private set
@@ -104,6 +127,9 @@ object FogStore {
     /** 撥霧半徑，由設定注入 */
     @Volatile
     var revealRadius: Double = 60.0
+
+    /** 外出紀錄保留幾筆 */
+    private val MAX_OUTINGS = 200
 
     private var dirty = false
     private var loaded = false
@@ -180,6 +206,14 @@ object FogStore {
             }
         }
         lastFix = fix
+        openOuting?.let {
+            openOuting = it.copy(
+                endTime = fix.time,
+                distanceM = sessionM,
+                cells = (cells.size - sessionStartCells).coerceAtLeast(0),
+                landmarks = (visitedLandmarks.size - sessionStartLandmarks).coerceAtLeast(0),
+            )
+        }
 
         // 3. 海拔與時段
         if (fix.altitude > maxAltitude) maxAltitude = fix.altitude
@@ -222,10 +256,37 @@ object FogStore {
         return isNew
     }
 
+    @Synchronized
     fun startSession() {
+        // 上一次沒有正常結束（App 被收掉）就先補封存，不要蓋掉
+        archiveOpenOuting()
         sessionM = 0.0
         anchor = null
+        val now = System.currentTimeMillis()
+        openOuting = Outing(now, now, 0.0, 0, 0)
+        sessionStartCells = cells.size
+        sessionStartLandmarks = visitedLandmarks.size
+        dirty = true
     }
+
+    /** 停止探索：把進行中的紀錄封存起來 */
+    @Synchronized
+    fun endSession() {
+        archiveOpenOuting()
+        flush(force = true)
+    }
+
+    /** 太短的外出不值得留（例如開了又馬上關），50 公尺以下直接丟掉 */
+    private fun archiveOpenOuting() {
+        val open = openOuting ?: return
+        openOuting = null
+        if (open.distanceM < 50.0) return
+        outings.add(open)
+        while (outings.size > MAX_OUTINGS) outings.removeAt(0)
+        dirty = true
+    }
+
+    fun recentOutings(): List<Outing> = outings.asReversed()
 
     // ── 統計 ────────────────────────────────────────────
 
@@ -324,6 +385,8 @@ object FogStore {
         o.optJSONObject("achievements")?.let { d -> d.keys().forEach { unlockedAchievements[it] = d.optLong(it) } }
         wishlist.clear()
         o.optJSONArray("wishlist")?.let { a -> for (i in 0 until a.length()) wishlist.add(a.optString(i)) }
+        readOutings(o.optJSONArray("outings"))
+        openOuting = null
 
         o.optJSONObject("lastPos")?.let {
             lastFix = Fix(it.optDouble("lat"), it.optDouble("lng"), time = it.optLong("ts", System.currentTimeMillis()))
@@ -398,6 +461,8 @@ object FogStore {
         days.clear()
         visitedLandmarks.clear()
         wishlist.clear()
+        outings.clear()
+        openOuting = null
         unlockedAchievements.clear()
         distanceM = 0.0
         maxAltitude = 0.0
@@ -413,6 +478,39 @@ object FogStore {
         _events.tryEmit(Event.FogChanged)
     }
 
+    /** 外出紀錄：進行中的那一筆也寫進去，App 被收掉時才不會整段消失 */
+    private fun outingsJson(): JSONArray {
+        val a = JSONArray()
+        (outings + listOfNotNull(openOuting)).forEach { t ->
+            a.put(
+                JSONObject()
+                    .put("start", t.startTime)
+                    .put("end", t.endTime)
+                    .put("distanceM", t.distanceM)
+                    .put("cells", t.cells)
+                    .put("landmarks", t.landmarks)
+            )
+        }
+        return a
+    }
+
+    private fun readOutings(a: JSONArray?) {
+        outings.clear()
+        if (a == null) return
+        for (i in 0 until a.length()) {
+            val t = a.optJSONObject(i) ?: continue
+            val rec = Outing(
+                startTime = t.optLong("start"),
+                endTime = t.optLong("end"),
+                distanceM = t.optDouble("distanceM", 0.0),
+                cells = t.optInt("cells"),
+                landmarks = t.optInt("landmarks"),
+            )
+            if (rec.distanceM >= 50.0) outings.add(rec)
+        }
+        while (outings.size > MAX_OUTINGS) outings.removeAt(0)
+    }
+
     private fun metaJson(): JSONObject {
         val o = JSONObject()
         o.put("distanceM", distanceM)
@@ -424,6 +522,7 @@ object FogStore {
         o.put("landmarks", JSONObject().also { d -> visitedLandmarks.forEach { (k, v) -> d.put(k, v) } })
         o.put("achievements", JSONObject().also { d -> unlockedAchievements.forEach { (k, v) -> d.put(k, v) } })
         o.put("wishlist", org.json.JSONArray().also { a -> wishlist.forEach { a.put(it) } })
+        o.put("outings", outingsJson())
         lastFix?.let {
             o.put("lastLat", it.lat)
             o.put("lastLng", it.lng)
@@ -450,6 +549,7 @@ object FogStore {
             o.optJSONArray("wishlist")?.let { a ->
                 for (i in 0 until a.length()) wishlist.add(a.optString(i))
             }
+            readOutings(o.optJSONArray("outings"))
             o.optJSONObject("achievements")?.let { d ->
                 d.keys().forEach { k -> unlockedAchievements[k] = d.optLong(k) }
             }

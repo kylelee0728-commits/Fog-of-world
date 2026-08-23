@@ -12,6 +12,7 @@ const BLOCK_AREA_KM2 = (BLOCK_M * BLOCK_M) / 1e6;
 const MIN_STEP_M = 3;        // 小於此距離視為 GPS 抖動，不計入里程
 const MAX_STEP_M = 300;      // 大於此距離視為訊號跳點，不計入里程
 const MAX_INTERP = 300;      // 兩點間最多補幾個中繼格
+const MAX_OUTINGS = 200;     // 外出紀錄保留幾筆
 
 export class GameState extends EventTarget {
   constructor(profile) {
@@ -33,6 +34,10 @@ export class GameState extends EventTarget {
     this.cells = unpack(this.data.cells);
     this.blocks = unpack(this.data.blocks);
     this.sessionM = 0;
+    this.sessionStartCells = this.cells.size;
+    this.sessionStartLandmarks = Object.keys(this.data.landmarks).length;
+    // 上次沒有正常結束的那一筆，載入時補封存
+    this.archiveOpenOuting();
     this.emit('reload');
   }
 
@@ -109,6 +114,14 @@ export class GameState extends EventTarget {
       d.lastPos.ts = ts;                       // 位移太小：保留錨點繼續累積
     }
 
+    // 進行中的外出紀錄
+    if (d.openOuting) {
+      d.openOuting.end = ts;
+      d.openOuting.distanceM = this.sessionM;
+      d.openOuting.cells = Math.max(0, this.cells.size - this.sessionStartCells);
+      d.openOuting.landmarks = Math.max(0, Object.keys(d.landmarks).length - this.sessionStartLandmarks);
+    }
+
     // 3. 海拔與時段
     if (Number.isFinite(pos.alt) && pos.alt > d.maxAltitude) d.maxAltitude = pos.alt;
     const hour = new Date(ts).getHours();
@@ -181,6 +194,41 @@ export class GameState extends EventTarget {
     this.dirty = true;
     this.flush();
     return i < 0;
+  }
+
+  /**
+   * 開始一次外出。上一次沒有正常結束（例如關掉分頁）就先補封存，
+   * 所以進行中的紀錄也寫在存檔裡。
+   */
+  startSession() {
+    this.archiveOpenOuting();
+    this.sessionM = 0;
+    this.sessionStartCells = this.cells.size;
+    this.sessionStartLandmarks = Object.keys(this.data.landmarks).length;
+    const now = Date.now();
+    this.data.openOuting = { start: now, end: now, distanceM: 0, cells: 0, landmarks: 0 };
+    this.dirty = true;
+  }
+
+  endSession() {
+    this.archiveOpenOuting();
+    this.flush();
+  }
+
+  /** 太短的外出不值得留，50 公尺以下直接丟掉 */
+  archiveOpenOuting() {
+    const open = this.data.openOuting;
+    this.data.openOuting = null;
+    if (!open || open.distanceM < 50) return;
+    if (!Array.isArray(this.data.outings)) this.data.outings = [];
+    this.data.outings.push(open);
+    while (this.data.outings.length > MAX_OUTINGS) this.data.outings.shift();
+    this.dirty = true;
+  }
+
+  /** 新的在前面 */
+  recentOutings() {
+    return (this.data.outings || []).slice().reverse();
   }
 
   export() {

@@ -20,6 +20,7 @@ object Settings {
     private const val KEY_DAILY_GOAL = "daily_goal_m"
     private const val KEY_GOAL_DAY = "daily_goal_day"
     private const val KEY_NEARBY = "nearby_alert"
+    private const val KEY_MAP_TYPE = "map_type"
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -60,6 +61,10 @@ object Settings {
     /** 每日目標（公尺）；0 表示不設目標 */
     fun dailyGoal(context: Context): Int = prefs(context).getInt(KEY_DAILY_GOAL, 0)
     fun setDailyGoal(context: Context, v: Int) = prefs(context).edit { putInt(KEY_DAILY_GOAL, v) }
+
+    /** 地圖樣式：0 夜色、1 衛星、2 地形 */
+    fun mapType(context: Context): Int = prefs(context).getInt(KEY_MAP_TYPE, 0)
+    fun setMapType(context: Context, v: Int) = prefs(context).edit { putInt(KEY_MAP_TYPE, v) }
 
     /** 走近還沒蓋章的地標時通知 */
     fun nearbyAlert(context: Context): Boolean = prefs(context).getBoolean(KEY_NEARBY, true)

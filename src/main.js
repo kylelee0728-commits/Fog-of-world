@@ -5,7 +5,7 @@ import { fogLayer } from './fogLayer.js';
 import { Tracker } from './tracker.js';
 import { LANDMARKS } from './landmarks.js';
 import { loadSettings, saveSettings, clearSave } from './storage.js';
-import { renderStats, renderAchievements, renderPassport, renderLandmark,
+import { renderStats, renderStatsSheet, renderAchievements, renderPassport, renderLandmark,
   setPassportQuery, setPassportFilter, toast, setGps, openSheet, closeSheets } from './ui.js';
 import { formatDistance } from './util.js';
 import { icon, landmarkIcon, landmarkIconName } from './icons.js';
@@ -151,6 +151,7 @@ let walking = false;
 let wakeLock = null;
 
 async function startWalking() {
+  state.startSession();
   walking = true;
   $('btnWalk').classList.add('walking');
   $('btnWalkIcon').innerHTML = icon('pause');
@@ -164,12 +165,12 @@ async function startWalking() {
 }
 
 function stopWalking() {
+  state.endSession();
   walking = false;
   $('btnWalk').classList.remove('walking');
   $('btnWalkIcon').innerHTML = icon('walk');
   $('btnWalkText').textContent = '開始探索';
   tracker.stop();
-  state.flush();
   if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
 }
 
@@ -193,6 +194,7 @@ $('btnLocate').onclick = () => {
 $('btnAchievements').onclick = () => { renderAchievements(state); openSheet('sheetAchievements'); };
 $('btnPassport').onclick = () => { renderPassport(state, lastPos, openLandmark); openSheet('sheetPassport'); };
 $('btnSettings').onclick = () => openSheet('sheetSettings');
+$('chips').onclick = () => { renderStatsSheet(state, settings.dailyGoal || 0); openSheet('sheetStats'); };
 for (const b of document.querySelectorAll('[data-close]')) b.onclick = closeSheets;
 
 /** 點護照上的地標：開詳情，而不是直接跳地圖 */

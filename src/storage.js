@@ -38,6 +38,8 @@ export function emptySave() {
     landmarks: {},    // { landmarkId: 造訪時間 }
     achievements: {}, // { achievementId: 解鎖時間 }
     wishlist: [],     // 想去清單，只存 landmarkId
+    outings: [],      // 每次外出的紀錄
+    openOuting: null, // 進行中的那一次
     maxAltitude: 0,
     nightWalk: 0,
     dawnWalk: 0,

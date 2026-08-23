@@ -227,4 +227,19 @@
     <string name="nearby_title">附近有還沒蓋章的地標</string>
     <string name="nearby_sub">%1$s · 往%2$s方 %3$s</string>
     <string name="lm_distance_here">你就在這裡</string>
+    <string name="stats_calendar">這半年</string>
+    <string name="stats_calendar_sub">顏色越亮表示那天走越多</string>
+    <string name="stats_outings">最近的外出</string>
+    <string name="stats_outings_empty">還沒有紀錄 —— 按「開始探索」走一段就會留下</string>
+    <string name="outing_summary">%1$s · %2$s</string>
+    <string name="outing_detail">點亮 %1$d 格 · 蓋章 %2$d 個</string>
+    <string name="duration_hm">%1$d 小時 %2$d 分</string>
+    <string name="duration_m">%1$d 分鐘</string>
+    <string name="set_maptype">地圖樣式</string>
+    <string name="maptype_night">夜色</string>
+    <string name="maptype_satellite">衛星</string>
+    <string name="maptype_terrain">地形</string>
+    <string name="widget_title">今天</string>
+    <string name="widget_desc">顯示今天走了多少，以及每日目標的進度</string>
+    <string name="widget_no_goal">尚未設定每日目標</string>
 </resources>

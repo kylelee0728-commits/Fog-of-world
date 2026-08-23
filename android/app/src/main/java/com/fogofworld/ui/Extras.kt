@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.fogofworld.R
 import com.fogofworld.data.Achievements
+import com.fogofworld.data.FogStore
 import com.fogofworld.data.Format
 import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Ranks
@@ -133,6 +136,24 @@ fun StatsSheet(
             Text(stringResource(R.string.stats_recent), color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             DailyChart(daily)
+
+            Spacer(Modifier.height(18.dp))
+            Text(stringResource(R.string.stats_calendar), color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.stats_calendar_sub), color = FogMuted, fontSize = 11.sp)
+            Spacer(Modifier.height(8.dp))
+            Box(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                DayCalendar(daily)
+            }
+
+            Spacer(Modifier.height(18.dp))
+            Text(stringResource(R.string.stats_outings), color = FogText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            val outings = remember { FogStore.recentOutings().take(15) }
+            if (outings.isEmpty()) {
+                Text(stringResource(R.string.stats_outings_empty), color = FogMuted, fontSize = 12.sp)
+            } else {
+                outings.forEach { OutingRow(it) }
+            }
 
             Spacer(Modifier.height(16.dp))
 

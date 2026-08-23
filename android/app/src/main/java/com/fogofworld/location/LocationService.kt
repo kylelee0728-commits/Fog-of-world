@@ -31,6 +31,7 @@ import com.fogofworld.data.Grid
 import com.fogofworld.data.Landmark
 import com.fogofworld.data.Landmarks
 import com.fogofworld.data.Settings
+import com.fogofworld.widget.TodayWidget
 
 /**
  * 前景服務：螢幕關掉、App 切到背景時仍然持續記錄足跡。
@@ -69,6 +70,7 @@ class LocationService : Service(), LocationListener {
     private var wakeLock: PowerManager.WakeLock? = null
     private var lastNotified = 0L
     private var lastNearbyCheck = 0L
+    private var lastWidgetUpdate = 0L
     /** 這次記錄期間已經提醒過的地標，停止記錄時清空 */
     private val nearbyNotified = HashSet<String>()
 
@@ -149,7 +151,9 @@ class LocationService : Service(), LocationListener {
             isRunning = false
         }
         nearbyNotified.clear()
-        FogStore.flush(force = true)
+        // 封存這次的外出紀錄（順便 flush）
+        FogStore.endSession()
+        TodayWidget.refresh(this)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -186,6 +190,11 @@ class LocationService : Service(), LocationListener {
         if (now - lastNotified > 10_000) {
             lastNotified = now
             notify(buildNotification())
+        }
+        // 小工具不需要跟通知一樣即時，一分鐘更新一次就夠
+        if (now - lastWidgetUpdate > 60_000) {
+            lastWidgetUpdate = now
+            TodayWidget.refresh(this)
         }
         if (now % 30_000 < 3_000) FogStore.flush()
     }

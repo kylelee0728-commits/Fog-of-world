@@ -27,7 +27,7 @@
       <div class="rank-bar"><span id="rankFill"></span></div>
     </div>
   </div>
-  <div class="chips">
+  <div class="chips" id="chips">
     <div class="chip"><b id="statDistance">0.00</b><span>公里</span></div>
     <div class="chip"><b id="statArea">0.00</b><span>km² 已點亮</span></div>
     <div class="chip"><b id="statLandmarks">0</b><span>地標</span></div>
@@ -80,14 +80,24 @@
   <div class="sheet-body">
     <input class="search" id="passSearch" type="search" placeholder="搜尋地標、國家" autocomplete="off">
     <div class="filters" id="passFilters">
-      <button class="chip on" data-filter="all">全部</button>
-      <button class="chip" data-filter="visited">已蓋章</button>
-      <button class="chip" data-filter="unvisited">未蓋章</button>
-      <button class="chip" data-filter="wish">想去</button>
+      <button class="fchip on" data-filter="all">全部</button>
+      <button class="fchip" data-filter="visited">已蓋章</button>
+      <button class="fchip" data-filter="unvisited">未蓋章</button>
+      <button class="fchip" data-filter="wish">想去</button>
     </div>
     <div class="nearest" id="nearestBox" hidden></div>
     <div id="passList"></div>
   </div>
+</section>
+
+<!-- ── 面板：我的紀錄 ───────────────────────────────────── -->
+<section class="sheet" id="sheetStats" hidden>
+  <div class="sheet-head">
+    <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.6,19.4h16.8v2H3.6zM5.4,11h3v7h-3zM10.5,6.4h3v11.6h-3zM15.6,13.4h3v4.6h-3z"/></svg> 我的紀錄</h2>
+    <div class="sheet-sub" id="statsSub"></div>
+    <button class="sheet-close" data-close>✕</button>
+  </div>
+  <div class="sheet-body" id="statsBody"></div>
 </section>
 
 <!-- ── 面板：地標詳情 ───────────────────────────────────── -->

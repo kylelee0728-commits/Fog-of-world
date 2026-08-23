@@ -92,6 +92,16 @@ export function formatDate(ts) {
   return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())}`;
 }
 
+export function formatDateTime(ts) {
+  const d = new Date(ts);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+export function todayKey() {
+  return dayKey(Date.now());
+}
+
 /** 連續探索天數（含今天或昨天為止的最長尾端連線） */
 export function currentStreak(days) {
   const set = new Set(days);

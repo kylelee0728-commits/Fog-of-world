@@ -95,6 +95,7 @@ fun FogScreen(
     var interval by remember { mutableStateOf(Settings.intervalSec(context)) }
     var autoUpdate by remember { mutableStateOf(Settings.autoUpdate(context)) }
     var nearbyAlert by remember { mutableStateOf(Settings.nearbyAlert(context)) }
+    var mapType by remember { mutableIntStateOf(Settings.mapType(context)) }
     var imperial by remember { mutableStateOf(Settings.imperial(context)) }
     var dailyGoal by remember { mutableStateOf(Settings.dailyGoal(context)) }
     val language = AppLanguage.fromTag(Settings.languageTag(context))
@@ -334,6 +335,7 @@ fun FogScreen(
                 follow = follow,
                 autoUpdate = autoUpdate,
                 nearbyAlert = nearbyAlert,
+                mapType = mapType,
                 imperial = imperial,
                 dailyGoalM = dailyGoal,
                 language = language,
@@ -355,8 +357,17 @@ fun FogScreen(
                 onFollow = { follow = it; Settings.setFollow(context, it) },
                 onAutoUpdate = { autoUpdate = it; Settings.setAutoUpdate(context, it) },
                 onNearbyAlert = { nearbyAlert = it; Settings.setNearbyAlert(context, it) },
+                onMapType = {
+                    mapType = it
+                    Settings.setMapType(context, it)
+                    controller?.setMapType(it)
+                },
                 onImperial = { imperial = it; Settings.setImperial(context, it) },
-                onDailyGoal = { dailyGoal = it; Settings.setDailyGoal(context, it) },
+                onDailyGoal = {
+                    dailyGoal = it
+                    Settings.setDailyGoal(context, it)
+                    com.fogofworld.widget.TodayWidget.refresh(context)
+                },
                 onLanguage = onLanguage,
                 onRequestBackground = onRequestBackground,
                 onCheckUpdate = { sheet = Sheet.NONE; onCheckUpdate() },

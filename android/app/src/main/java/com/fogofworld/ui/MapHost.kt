@@ -14,6 +14,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.fogofworld.R
 import com.fogofworld.data.FogStore
 import com.fogofworld.data.Grid
+import com.fogofworld.data.Settings
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
@@ -27,6 +28,8 @@ interface MapController {
     fun animateTo(lat: Double, lng: Double)
     fun setZoom(zoom: Double)
     fun invalidateFog()
+    /** 0 夜色、1 衛星、2 地形 */
+    fun setMapType(type: Int)
 }
 
 /**
@@ -60,10 +63,7 @@ fun MapHost(
 
             map.getMapAsync { google ->
                 googleHolder[0] = google
-                // 暗色樣式才配得上迷霧
-                runCatching {
-                    google.setMapStyle(MapStyleOptions.loadRawResourceStyle(ctx, R.raw.map_style_night))
-                }
+                applyMapType(ctx, google, Settings.mapType(ctx))
                 google.uiSettings.apply {
                     isZoomControlsEnabled = false
                     isMapToolbarEnabled = false
@@ -89,6 +89,8 @@ fun MapHost(
                     }
 
                     override fun invalidateFog() = fog.invalidate()
+
+                    override fun setMapType(type: Int) = applyMapType(ctx, google, type)
                 })
                 fog.invalidate()
             }
@@ -118,6 +120,29 @@ fun MapHost(
             lifecycleOwner.lifecycle.removeObserver(observer)
             holder[0]?.onDestroy()
             holder[0] = null
+        }
+    }
+}
+
+/**
+ * 夜色樣式只有在一般地圖上有意義；衛星與地形本身就有影像，
+ * 套上暗色樣式反而看不出東西，所以切過去時要把樣式清掉。
+ */
+private fun applyMapType(ctx: android.content.Context, map: GoogleMap, type: Int) {
+    runCatching {
+        when (type) {
+            1 -> {
+                map.mapType = GoogleMap.MAP_TYPE_SATELLITE
+                map.setMapStyle(null)
+            }
+            2 -> {
+                map.mapType = GoogleMap.MAP_TYPE_TERRAIN
+                map.setMapStyle(null)
+            }
+            else -> {
+                map.mapType = GoogleMap.MAP_TYPE_NORMAL
+                map.setMapStyle(MapStyleOptions.loadRawResourceStyle(ctx, R.raw.map_style_night))
+            }
         }
     }
 }

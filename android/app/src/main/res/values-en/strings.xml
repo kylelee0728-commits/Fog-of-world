@@ -227,4 +227,19 @@
     <string name="nearby_title">An unstamped landmark is nearby</string>
     <string name="nearby_sub">%1$s · %3$s to the %2$s</string>
     <string name="lm_distance_here">You are here</string>
+    <string name="stats_calendar">Last six months</string>
+    <string name="stats_calendar_sub">Brighter means you walked further that day</string>
+    <string name="stats_outings">Recent outings</string>
+    <string name="stats_outings_empty">Nothing yet — tap Start and walk a while</string>
+    <string name="outing_summary">%1$s · %2$s</string>
+    <string name="outing_detail">%1$d cells lit · %2$d stamped</string>
+    <string name="duration_hm">%1$d h %2$d min</string>
+    <string name="duration_m">%1$d min</string>
+    <string name="set_maptype">Map style</string>
+    <string name="maptype_night">Night</string>
+    <string name="maptype_satellite">Satellite</string>
+    <string name="maptype_terrain">Terrain</string>
+    <string name="widget_title">Today</string>
+    <string name="widget_desc">Shows how far you have walked today and your goal progress</string>
+    <string name="widget_no_goal">No daily goal set</string>
 </resources>
